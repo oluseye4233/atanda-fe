@@ -1,0 +1,11 @@
+node_modules
+dist
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+
+# Reference / spec documents dropped into chat — not runtime assets
+attached_assets/*.docx
+attached_assets/*.pdf
+attached_assets/*.PDF
