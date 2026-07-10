@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Lock, ArrowRight, Mail, Eye, EyeOff } from "lucide-react";
+import { Lock, ArrowRight, Mail, User, Eye, EyeOff } from "lucide-react";
 
-export default function LoginPage() {
-  const [, setLocation] = useLocation();
-  const [email, setEmail] = useState("analyst@enterprise.com");
-  const [password, setPassword] = useState("arkplatform");
+export default function SignupPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -23,20 +23,18 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen w-full flex bg-[#0d1117] overflow-hidden"
-      data-testid="page-login"
+      data-testid="page-signup"
     >
       {/* ── Left panel: brand ── */}
       <div className="hidden lg:flex flex-col justify-between w-[45%] px-14 py-12 relative overflow-hidden border-r border-white/6">
-        {/* Ambient glow */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 80% 60% at 20% 50%, hsl(188 86% 53% / 0.10), transparent 70%)",
+              "radial-gradient(ellipse 80% 60% at 20% 50%, hsl(152 69% 31% / 0.09), transparent 70%)",
           }}
         />
-        {/* Dot grid */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 opacity-40"
@@ -57,35 +55,33 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-secondary/25 bg-secondary/8 px-3.5 py-1.5 text-xs font-mono tracking-widest text-secondary uppercase mb-2">
+            Free to start
+          </div>
           <h2 className="font-display font-black text-3xl text-white leading-tight tracking-tight">
-            KNOW YOUR WORTH.
+            Your career,
             <br />
-            <span className="text-destructive">KNOW YOUR RISK.</span>
-            <br />
-            <span className="text-primary">KNOW YOUR NEXT MOVE.</span>
+            <span className="text-primary">intelligently mapped.</span>
           </h2>
           <p className="text-muted-foreground text-base leading-relaxed max-w-sm">
-            Career intelligence that turns your CV into a strategy — in under
-            60 seconds.
+            Upload your CV, get your JST Index score, see where AI threatens
+            your role, and discover your highest-ROI next move — all in under
+            a minute.
           </p>
         </div>
 
-        <div className="relative z-10 flex flex-col gap-3">
+        <div className="relative z-10 space-y-3">
+          <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground/50 mb-3">
+            What you get on the free tier
+          </p>
           {[
-            { label: "JST Index", value: "78 / 100", color: "text-primary" },
-            { label: "AI Risk Level", value: "L2 · Moderate", color: "text-destructive" },
-            { label: "Pivot Paths", value: "3 found", color: "text-secondary" },
-          ].map(({ label, value, color }) => (
-            <div
-              key={label}
-              className="flex items-center justify-between rounded-xl border border-white/6 bg-white/3 px-4 py-3"
-            >
-              <span className="text-xs font-mono text-muted-foreground tracking-widest uppercase">
-                {label}
-              </span>
-              <span className={`text-xs font-mono font-semibold ${color}`}>
-                {value}
-              </span>
+            "Full CV analysis & JST score",
+            "AI vulnerability classification",
+            "3 pivot pathway suggestions",
+          ].map((item) => (
+            <div key={item} className="flex items-center gap-3">
+              <div className="h-1.5 w-1.5 rounded-full bg-secondary shrink-0" />
+              <span className="text-sm text-muted-foreground">{item}</span>
             </div>
           ))}
         </div>
@@ -98,7 +94,7 @@ export default function LoginPage() {
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 70% 50% at 80% 20%, hsl(152 69% 31% / 0.07), transparent 65%)",
+              "radial-gradient(ellipse 70% 50% at 80% 20%, hsl(188 86% 53% / 0.06), transparent 65%)",
           }}
         />
 
@@ -120,10 +116,10 @@ export default function LoginPage() {
 
           <div className="mb-8">
             <h1 className="font-sans font-bold text-2xl text-white mb-1.5 tracking-tight">
-              Welcome back
+              Create your account
             </h1>
             <p className="text-sm text-muted-foreground">
-              Sign in to your ARK account to continue.
+              Free forever. No credit card required.
             </p>
           </div>
 
@@ -138,6 +134,25 @@ export default function LoginPage() {
                 {error}
               </motion.div>
             )}
+
+            {/* Full name */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                Full name
+              </label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
+                <input
+                  data-testid="input-name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-white/3 pl-10 pr-4 py-3 text-sm text-white placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-all"
+                  placeholder="Jane Smith"
+                  required
+                />
+              </div>
+            </div>
 
             {/* Email */}
             <div className="space-y-1.5">
@@ -160,17 +175,9 @@ export default function LoginPage() {
 
             {/* Password */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-mono uppercase tracking-widest text-muted-foreground">
-                  Password
-                </label>
-                <button
-                  type="button"
-                  className="text-[11px] text-primary/70 hover:text-primary transition-colors font-mono"
-                >
-                  Forgot password?
-                </button>
-              </div>
+              <label className="block text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                Password
+              </label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
                 <input
@@ -179,7 +186,8 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full rounded-lg border border-white/10 bg-white/3 pl-10 pr-11 py-3 text-sm text-white placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-all"
-                  placeholder="••••••••"
+                  placeholder="Min. 8 characters"
+                  minLength={8}
                   required
                 />
                 <button
@@ -197,11 +205,23 @@ export default function LoginPage() {
               </div>
             </div>
 
+            <p className="text-[11px] text-muted-foreground/50 leading-relaxed">
+              By signing up you agree to our{" "}
+              <Link href="/terms" className="text-primary/70 hover:text-primary transition-colors">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" className="text-primary/70 hover:text-primary transition-colors">
+                Privacy Policy
+              </Link>
+              .
+            </p>
+
             <button
-              data-testid="button-login"
+              data-testid="button-register"
               type="submit"
               disabled={isLoading}
-              className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 mt-2"
+              className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
               style={{
                 boxShadow:
                   "inset 0 1px 0 rgba(255,255,255,0.15), 0 0 20px hsl(188 86% 53% / 0.2)",
@@ -209,11 +229,11 @@ export default function LoginPage() {
             >
               {isLoading ? (
                 <span className="font-mono text-xs tracking-wider animate-pulse">
-                  Authenticating…
+                  Creating account…
                 </span>
               ) : (
                 <>
-                  Sign In
+                  Create Account
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
@@ -221,13 +241,13 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            Already have an account?{" "}
             <Link
-              href="/signup"
+              href="/login"
               data-testid="link-toggle-auth-mode"
               className="text-primary hover:text-primary/80 transition-colors font-medium"
             >
-              Sign up free
+              Sign in
             </Link>
           </p>
 
