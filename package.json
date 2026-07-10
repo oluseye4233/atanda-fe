@@ -8,9 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "tsc",
-    "deploy": "vite build && wrangler pages deploy dist --project-name ark-platform",
-    "deploy:staging": "vite build && wrangler pages deploy dist --project-name ark-platform --branch staging",
-    "cf:dev": "wrangler pages dev dist"
+    "deploy": "vite build && wrangler deploy",
+    "deploy:staging": "vite build && wrangler deploy --env staging",
+    "cf:dev": "wrangler dev"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

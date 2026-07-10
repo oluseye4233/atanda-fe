@@ -1,27 +1,14 @@
 {
-  // Cloudflare Pages deployment config for ARK — a pure static SPA (Vite + React).
-  // Deploy: wrangler pages deploy dist --project-name ark-platform
-  // Or set up a Git-connected Pages project and push to main.
-
   "name": "ark-platform",
-
-  // Pages uses this to locate your built assets.
-  // Matches vite.config.ts `build.outDir` (resolved to <root>/../dist → project root /dist).
-  "pages_build_output_dir": "./dist",
-
-  // Run `wrangler pages dev dist` to serve locally via the CF Pages runtime.
   "compatibility_date": "2026-07-01",
-
-  // nodejs_compat unlocks Node built-ins for any future Pages Functions / edge middleware.
   "compatibility_flags": ["nodejs_compat"],
-
-  // Observability — enable request logging in the Pages dashboard.
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
   "observability": {
     "enabled": true
   },
-
-  // Environment-specific overrides.
-  // These only affect Pages Functions / edge middleware vars, not the static bundle.
   "env": {
     "staging": {
       "name": "ark-platform-staging",
