@@ -49,7 +49,7 @@ export function ExplainerSection() {
           </h2>
           <div className="space-y-4 text-muted-foreground leading-relaxed text-sm md:text-base max-w-2xl mx-auto">
             <p>
-              ARK reads your CV the way a sharp career strategist would — not as
+              ARK reads your CV the way a sharp career strategist would; not as
               a list of past jobs, but as a portfolio of skills, each with its
               own market value and shelf life. In seconds it benchmarks you
               against live labor-market data to show what you're worth right
@@ -59,7 +59,7 @@ export function ExplainerSection() {
               From there it does the part most tools skip: it maps where you can
               go next. Every pivot and upskilling move is scored by return on
               effort, so you're never guessing which skill to learn or which
-              role to chase — you can see the smartest next move before you
+              role to chase. You can see the smartest next move before you
               commit to it.
             </p>
           </div>
@@ -67,7 +67,6 @@ export function ExplainerSection() {
 
         {/* Horizontal timeline */}
         <div className="relative">
-          {/* Connector line, desktop only */}
           <div
             aria-hidden="true"
             className="hidden lg:block absolute top-8 left-[16.6%] right-[16.6%] h-px bg-linear-to-r from-white/10 via-primary/40 to-white/10 z-0"

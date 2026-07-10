@@ -1,17 +1,16 @@
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Lock, ArrowRight, Mail, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
-  const [, setLocation] = useLocation();
-  const [email, setEmail] = useState("analyst@enterprise.com");
-  const [password, setPassword] = useState("arkplatform");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState<string>("analyst@enterprise.com");
+  const [password, setPassword] = useState<string>("arkplatform");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
@@ -229,10 +228,6 @@ export default function LoginPage() {
             >
               Sign up free
             </Link>
-          </p>
-
-          <p className="mt-8 text-center text-[11px] font-mono text-muted-foreground/30 uppercase tracking-widest">
-            Protected by ARK · Junglenomics Governance
           </p>
         </motion.div>
       </div>
