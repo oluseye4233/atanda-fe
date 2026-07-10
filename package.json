@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "tsc"
+    "check": "tsc",
+    "deploy": "vite build && wrangler pages deploy dist --project-name ark-platform",
+    "deploy:staging": "vite build && wrangler pages deploy dist --project-name ark-platform --branch staging",
+    "cf:dev": "wrangler pages dev dist"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -78,7 +81,8 @@
     "tailwindcss": "^4.1.14",
     "tsx": "^4.20.5",
     "typescript": "5.6.3",
-    "vite": "^7.3.2"
+    "vite": "^7.3.2",
+    "wrangler": "^4.110.0"
   },
   "overrides": {
     "dompurify": "^3.4.2",
