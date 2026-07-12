@@ -1,9 +1,27 @@
-// ── Auth Types — derived from LL_UI_INTEGERATION.md ──────────────────────────
+// ── Primitives ────────────────────────────────────────────────────────────────
 
 export type UserRole = "user" | "admin" | "staff";
 export type UserType = "free" | "premium";
 
-/** Canonical user object returned by login / whoami / PATCH me */
+// ── Shared response fragments ─────────────────────────────────────────────────
+
+interface TimedMessageResponse {
+  message: string;
+  expiresInSeconds: number;
+}
+
+interface VerificationResponse {
+  verified: boolean;
+  message: string;
+}
+
+interface MessageResponse {
+  message: string;
+}
+
+// ── User object ───────────────────────────────────────────────────────────────
+
+/** Canonical shape returned by login / whoami / PATCH me */
 export interface AuthUser {
   id: string;
   email: string;
@@ -18,11 +36,8 @@ export interface AuthUser {
   createdAt: string;
   updatedAt: string;
 
-  // ── App-layer fields ──────────────────────────────────────────────────────
-  // These are not part of the backend /auth/* responses but are used
-  // throughout the UI (profile, subscription, school, marketplace).
-  // They are populated from other endpoints (assessments, subscriptions)
-  // and merged into the auth cache via updateUser().
+  // App-layer fields — not returned by /auth/* but used across the UI.
+  // Populated from other endpoints and merged into the auth cache via updateUser().
   username?: string | null;
   department?: string | null;
   seniority?: string | null;
@@ -46,20 +61,12 @@ export interface LoginBody {
   password: string;
 }
 
-export interface VerifyAccountBody {
+export interface VerifyOtpBody {
   otp: string;
-}
-
-export interface ResendCodeBody {
-  // intentionally empty — body is none; type kept for completeness
 }
 
 export interface RequestResetBody {
   email: string;
-}
-
-export interface VerifyResetBody {
-  otp: string;
 }
 
 export interface ResetPasswordBody {
@@ -73,35 +80,12 @@ export interface UpdateMeBody {
 
 // ── Response shapes ───────────────────────────────────────────────────────────
 
-export interface SignupResponse {
-  message: string;
-  expiresInSeconds: number;
-}
+export type SignupResponse       = TimedMessageResponse;
+export type ResendCodeResponse   = TimedMessageResponse;
+export type RequestResetResponse = TimedMessageResponse;
 
-export interface VerifyAccountResponse {
-  verified: boolean;
-  message: string;
-}
+export type VerifyAccountResponse   = VerificationResponse;
+export type VerifyResetResponse     = VerificationResponse;
 
-export interface ResendCodeResponse {
-  message: string;
-  expiresInSeconds: number;
-}
-
-export interface RequestResetResponse {
-  message: string;
-  expiresInSeconds: number;
-}
-
-export interface VerifyResetResponse {
-  verified: boolean;
-  message: string;
-}
-
-export interface ResetPasswordResponse {
-  message: string;
-}
-
-export interface LogoutResponse {
-  message: string;
-}
+export type ResetPasswordResponse = MessageResponse;
+export type LogoutResponse        = MessageResponse;

@@ -4,12 +4,11 @@ import type {
   SignupBody,
   SignupResponse,
   LoginBody,
-  VerifyAccountBody,
+  VerifyOtpBody,
   VerifyAccountResponse,
   ResendCodeResponse,
   RequestResetBody,
   RequestResetResponse,
-  VerifyResetBody,
   VerifyResetResponse,
   ResetPasswordBody,
   ResetPasswordResponse,
@@ -21,7 +20,7 @@ export const authService = {
   signup: (body: SignupBody) =>
     apiClient.post<SignupResponse>("/auth/signup", body),
 
-  verifyAccount: (body: VerifyAccountBody) =>
+  verifyAccount: (body: VerifyOtpBody) =>
     apiClient.post<VerifyAccountResponse>("/auth/verify-account", body),
 
   resendCode: () =>
@@ -42,7 +41,7 @@ export const authService = {
   requestReset: (body: RequestResetBody) =>
     apiClient.post<RequestResetResponse>("/auth/request-reset", body),
 
-  verifyRequestReset: (body: VerifyResetBody) =>
+  verifyRequestReset: (body: VerifyOtpBody) =>
     apiClient.post<VerifyResetResponse>("/auth/verify-request-reset", body),
 
   resetPassword: (body: ResetPasswordBody) =>
