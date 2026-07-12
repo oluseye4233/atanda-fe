@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Sparkles, Check, Copy, ArrowRight, LogIn, UserPlus, Compass, Crown, GraduationCap } from "lucide-react";
 import { api } from "@/lib/api";
@@ -136,14 +136,14 @@ export default function F1000Page() {
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
-                  href="/login"
+                  to="/login"
                   data-testid="link-f1000-login"
                   className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border-2 border-emerald-400/60 bg-background/60 px-5 py-3 font-mono text-sm uppercase tracking-wider text-emerald-300 hover:bg-emerald-500/10 transition-colors"
                 >
                   <LogIn className="h-4 w-4" /> Log In
                 </Link>
                 <Link
-                  href="/signup"
+                  to="/signup"
                   data-testid="link-f1000-signup"
                   className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border-2 border-primary/60 bg-primary/10 px-5 py-3 font-mono text-sm uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors"
                 >
@@ -188,7 +188,7 @@ export default function F1000Page() {
                 </p>
               </div>
               <Link
-                href="/subscription"
+                to="/subscription"
                 data-testid="link-f1000-upgrade"
                 className="inline-flex items-center gap-2 text-primary font-mono text-sm uppercase tracking-wider hover:text-primary/80 transition-colors"
               >

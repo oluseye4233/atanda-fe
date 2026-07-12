@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
@@ -778,14 +778,14 @@ export default function DemoTourPage() {
           </div>
           <div className="flex items-center gap-3">
             <Link
-              href="/demo"
+              to="/demo"
               className="text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"
               data-testid="link-classic-demo"
             >
               Classic Demo
             </Link>
             <Link
-              href="/login"
+              to="/login"
               data-testid="link-tour-login"
               className="text-xs font-mono uppercase tracking-widest text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
             >
@@ -880,7 +880,7 @@ export default function DemoTourPage() {
                   className="border-primary/40 text-primary hover:bg-primary/10"
                   data-testid={`button-open-${step.id}`}
                 >
-                  <Link href={openHref}>
+                  <Link to={openHref}>
                     {openLabel} <ExternalLink className="h-4 w-4 ml-2" />
                   </Link>
                 </Button>
@@ -943,7 +943,7 @@ export default function DemoTourPage() {
               className="bg-gradient-to-r from-primary to-emerald-400 text-background hover:opacity-90"
               data-testid="button-tour-complete"
             >
-              <Link href="/login">
+              <Link to="/login">
                 Start with your resume <ArrowRight className="h-4 w-4 ml-2" />
               </Link>
             </Button>

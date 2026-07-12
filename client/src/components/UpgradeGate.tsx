@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { Lock, ArrowRight } from "lucide-react";
 
 interface UpgradeGateProps {
@@ -24,7 +24,7 @@ export default function UpgradeGate({ featureName, requiredPlan, children, hasAc
         Upgrade your subscription to unlock full access.
       </p>
       <Link
-        href="/subscription"
+        to="/subscription"
         data-testid="button-upgrade-plan"
         className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-mono text-sm uppercase tracking-wider px-6 py-3 rounded-lg transition-all hover:scale-[1.02]"
       >

@@ -2,7 +2,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell,
 } from "recharts";
 import { Layers, Lightbulb, ArrowRight } from "lucide-react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { PILLAR_TIPS } from "@/lib/arkCoaching";
 import type { CcmiPillarKey } from "@shared/schema";
 
@@ -121,7 +121,7 @@ export function CcmiPillars({ data }: { data: CcmiPillarData | null }) {
             </p>
           </div>
           <Link
-            href="/play"
+            to="/play"
             className="flex items-center gap-1 px-2 py-1 rounded border border-rose-400/40 hover:border-rose-300 hover:bg-rose-400/10 transition-all font-mono text-[10px] uppercase tracking-widest text-rose-200 flex-shrink-0"
             data-testid="link-practice-pillar"
           >

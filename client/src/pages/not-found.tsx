@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
@@ -16,7 +16,7 @@ export default function NotFound() {
           </p>
         </div>
         <Link
-          href="/"
+          to="/"
           data-testid="link-home"
           className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-mono text-sm uppercase tracking-wider px-6 py-3 rounded-lg transition-all hover:scale-[1.02]"
         >

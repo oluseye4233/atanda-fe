@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 
@@ -52,7 +52,7 @@ export function AiBudgetBanner() {
           </span>
         </div>
         <Link
-          href={ctaHref}
+          to={ctaHref}
           className={
             hardStop
               ? "rounded bg-destructive px-3 py-1 text-xs font-semibold text-white hover:bg-destructive/80"

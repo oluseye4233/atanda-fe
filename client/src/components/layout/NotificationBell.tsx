@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Bell, X } from "lucide-react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/useAuth";
 import { api } from "@/lib/api";
 import { useNotificationStream, type ArkNotification, type ArkRoundtableEvent } from "@/lib/useArkStream";
@@ -162,7 +162,7 @@ export function NotificationBell() {
                 return (
                   <li key={n.id}>
                     {n.link ? (
-                      <Link href={n.link} onClick={handleClick}>{body}</Link>
+                      <Link to={n.link} onClick={handleClick}>{body}</Link>
                     ) : (
                       <button type="button" onClick={handleClick} className="w-full text-left">{body}</button>
                     )}

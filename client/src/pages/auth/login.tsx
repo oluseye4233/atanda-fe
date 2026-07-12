@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Lock, ArrowRight, Mail, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState<string>("analyst@enterprise.com");
-  const [password, setPassword] = useState<string>("arkplatform");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -48,7 +48,7 @@ export default function LoginPage() {
 
         <div className="relative z-10">
           <Link
-            href="/"
+            to="/"
             className="font-display font-bold text-primary text-xl tracking-widest hover:text-primary/80 transition-colors"
           >
             ARK
@@ -110,7 +110,7 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <div className="lg:hidden mb-8 text-center">
             <Link
-              href="/"
+              to="/"
               className="font-display font-bold text-primary text-2xl tracking-widest"
             >
               ARK
@@ -222,7 +222,7 @@ export default function LoginPage() {
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
             <Link
-              href="/signup"
+              to="/signup"
               data-testid="link-toggle-auth-mode"
               className="text-primary hover:text-primary/80 transition-colors font-medium"
             >

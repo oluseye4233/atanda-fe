@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useSearch, useLocation } from "wouter";
+import { useLocation, useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Users, Target, ShieldAlert, Activity, Loader2, ChevronRight, SlidersHorizontal, Search, X, UserPlus, TrendingUp, Check, Filter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -118,8 +118,8 @@ export default function EnterprisePage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const search = useSearch();
-  const [, navigate] = useLocation();
+  const { search } = useLocation();
+  const navigate = useNavigate();
   const filters = useMemo<WorkforceFilter[]>(() => {
     const params = new URLSearchParams(search);
     const out: WorkforceFilter[] = [];

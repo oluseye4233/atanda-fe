@@ -3,7 +3,7 @@
 // it + runs the deterministic HIVE pre-check, then hand off to /marketplace/publish
 // pre-filled. Non-subscribers get preview-only (no Send-to-Publish button).
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, FileUp, Loader2, Sparkles, AlertTriangle, CheckCircle2, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { useSubscription } from "@/lib/useSubscription";
@@ -30,7 +30,7 @@ const LEVEL_COLOR: Record<LogLevel, string> = {
 export function ForgeLabPage() {
   const { user } = useAuth();
   const { canAccessForgeCards } = useSubscription();
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const [meta, setMeta] = useState({ title: "", description: "", pillar: "System" });
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -100,14 +100,14 @@ export function ForgeLabPage() {
     return (
       <div className="max-w-2xl mx-auto py-16 text-center">
         <p className="font-mono text-sm text-muted-foreground uppercase">Log in to use the Matrix Forge Lab.</p>
-        <Link href="/login" className="text-primary hover:underline font-mono text-xs uppercase mt-4 inline-block">Go to login →</Link>
+        <Link to="/login" className="text-primary hover:underline font-mono text-xs uppercase mt-4 inline-block">Go to login →</Link>
       </div>
     );
   }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6" data-testid="page-forge-lab">
-      <Link href="/marketplace" className="font-mono text-xs uppercase tracking-wider text-muted-foreground hover:text-primary inline-flex items-center gap-2" data-testid="link-back-from-forge">
+      <Link to="/marketplace" className="font-mono text-xs uppercase tracking-wider text-muted-foreground hover:text-primary inline-flex items-center gap-2" data-testid="link-back-from-forge">
         <ArrowLeft className="h-4 w-4" /> Back to marketplace
       </Link>
 

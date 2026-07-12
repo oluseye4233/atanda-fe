@@ -24,7 +24,7 @@ import {
   Trash2,
   Cpu,
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { JnomicsCardList } from "@/components/dashboard/JnomicsCardList";
 import { ArkReportDownloadButton } from "@/components/ArkReportDownloadButton";
 
@@ -120,7 +120,7 @@ export default function ProfilePage() {
     setSaveError(null);
     try {
       await api.updateProfile(user.id, form);
-      updateUser(form);
+      updateUser(form as Parameters<typeof updateUser>[0]);
       setSaved(true);
       setEditing(false);
       setTimeout(() => setSaved(false), 2500);
@@ -151,7 +151,7 @@ export default function ProfilePage() {
         <div className="flex items-center gap-3 flex-wrap">
           <ArkReportDownloadButton />
           {FEATURES.guinPublic && (
-            <Link href={`/u/${user.username}`} data-testid="link-view-public-profile">
+            <Link to={`/u/${user.username}`} data-testid="link-view-public-profile">
               <a className="px-3 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-wider border border-purple-300/30 bg-purple-300/10 text-purple-200 hover:bg-purple-300/20 transition-colors">
                 View Public Profile →
               </a>
@@ -236,7 +236,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="space-y-6">
-          <Link href="/subscription" className="block" data-testid="link-profile-subscription">
+          <Link to="/subscription" className="block" data-testid="link-profile-subscription">
             <div className="glass-card p-5 rounded-xl hover:border-primary/30 transition-all hover:scale-[1.02] cursor-pointer border border-transparent">
               <div className="flex items-center gap-3 mb-3">
                 <CreditCard className="h-5 w-5" style={{ color: plan.color }} />
@@ -253,7 +253,7 @@ export default function ProfilePage() {
           </Link>
 
           {FEATURES.contextCraftPage ? (
-            <Link href="/context-craft" className="block" data-testid="link-profile-cert">
+            <Link to="/context-craft" className="block" data-testid="link-profile-cert">
               <div className="glass-card p-5 rounded-xl hover:border-primary/30 transition-all hover:scale-[1.02] cursor-pointer border border-transparent">
                 <div className="flex items-center gap-3 mb-3">
                   <ShieldCheck className="h-5 w-5" style={{ color: cert.color }} />
@@ -329,7 +329,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <Link href="/marketplace" className="block" data-testid="link-profile-marketplace">
+          <Link to="/marketplace" className="block" data-testid="link-profile-marketplace">
             <div className="glass-card p-5 rounded-xl hover:border-primary/30 transition-all hover:scale-[1.02] cursor-pointer border border-transparent space-y-3">
               <div className="flex items-center gap-3">
                 <ShoppingBag className="h-5 w-5 text-primary" />
@@ -388,7 +388,7 @@ export default function ProfilePage() {
                 Upload your CV or run an assessment to map your skills to Junglenomics cards.
               </p>
               <Link
-                href="/upload"
+                to="/upload"
                 className="inline-block mt-4 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wider bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition-colors"
                 data-testid="link-upload-cv"
               >

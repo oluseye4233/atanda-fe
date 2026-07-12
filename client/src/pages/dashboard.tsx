@@ -8,7 +8,7 @@ import { TaskHeatmap } from "@/components/dashboard/TaskHeatmap";
 import { VulnerabilityTimeline } from "@/components/dashboard/VulnerabilityTimeline";
 import { Cpu, FileText, Loader2, TrendingUp, Mail, CheckCircle2, Activity, Zap, History, Info, ArrowUpRight, Upload as UploadIcon, BookOpen, GraduationCap } from "lucide-react";
 import { useArkStream, describeEvent } from "@/lib/useArkStream";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/useAuth";
 import { api } from "@/lib/api";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, CartesianGrid } from "recharts";
@@ -177,7 +177,7 @@ export default function Dashboard() {
     if (!user) return;
     setSendingEmail(true);
     try {
-      await api.requestEmailNotification(user.id, user.username);
+      await api.requestEmailNotification(user.id, user.username ?? user.email);
       setEmailSent(true);
       setTimeout(() => setEmailSent(false), 4000);
     } catch (err) {
@@ -228,7 +228,7 @@ export default function Dashboard() {
         </p>
         <div className="flex flex-col sm:flex-row gap-3">
           <Link
-            href="/upload"
+            to="/upload"
             data-testid="button-start-first-assessment"
             className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-mono uppercase tracking-wider px-6 py-3 text-sm font-medium rounded-md transition-all hover:scale-[1.02]"
           >
@@ -262,7 +262,7 @@ export default function Dashboard() {
           You've removed every source that fed your ARK profile, so there's nothing to score right now. Add a résumé, self-assessment or LinkedIn profile to rebuild your reading.
         </p>
         <Link
-          href="/upload"
+          to="/upload"
           data-testid="button-add-source-empty"
           className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-mono uppercase tracking-wider px-6 py-3 text-sm font-medium rounded-md transition-all hover:scale-[1.02]"
         >
@@ -302,21 +302,21 @@ export default function Dashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Link href="/ark/history" className="inline-flex items-center justify-center border border-secondary/50 text-secondary hover:bg-secondary/10 font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md" data-testid="link-ark-history">
+          <Link to="/ark/history" className="inline-flex items-center justify-center border border-secondary/50 text-secondary hover:bg-secondary/10 font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md" data-testid="link-ark-history">
             <History className="w-4 h-4 mr-2" /> ARK History
           </Link>
           {FEATURES.bookCompanion && (
-            <Link href="/book" className="inline-flex items-center justify-center border border-primary/50 text-primary hover:bg-primary/10 font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md" data-testid="link-book-companion">
+            <Link to="/book" className="inline-flex items-center justify-center border border-primary/50 text-primary hover:bg-primary/10 font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md" data-testid="link-book-companion">
               <BookOpen className="w-4 h-4 mr-2" /> Book Companion
             </Link>
           )}
           {FEATURES.executiveReport && (
-            <Link href="/report" className="inline-flex items-center justify-center border border-primary/50 text-primary hover:bg-primary/10 font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md">
+            <Link to="/report" className="inline-flex items-center justify-center border border-primary/50 text-primary hover:bg-primary/10 font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md">
               <FileText className="w-4 h-4 mr-2" /> Export Brief
             </Link>
           )}
           {FEATURES.arkResume && (
-            <Link href="/ark-resume" className="inline-flex items-center justify-center border border-secondary/50 text-secondary hover:bg-secondary/10 font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md" data-testid="link-ark-resume">
+            <Link to="/ark-resume" className="inline-flex items-center justify-center border border-secondary/50 text-secondary hover:bg-secondary/10 font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md" data-testid="link-ark-resume">
               <FileText className="w-4 h-4 mr-2" /> ARK Resume
             </Link>
           )}
@@ -434,7 +434,7 @@ export default function Dashboard() {
                   </span>
                 )}
                 <Link
-                  href="/upload"
+                  to="/upload"
                   data-testid="link-add-source"
                   className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1"
                 >
@@ -456,7 +456,7 @@ export default function Dashboard() {
               </div>
             </div>
             <Link
-              href="/pathways"
+              to="/pathways"
               data-testid="link-hero-pathways"
               className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-widest text-secondary hover:text-secondary/80 transition-colors"
             >
@@ -594,7 +594,7 @@ export default function Dashboard() {
 
           {FEATURES.trainingProviders && (
             <Link
-              href="/training"
+              to="/training"
               data-testid="link-training-providers"
               className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-6 rounded-xl border border-secondary/30 hover:border-secondary/60 transition-colors"
             >

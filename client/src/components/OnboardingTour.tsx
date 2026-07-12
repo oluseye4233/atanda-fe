@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import {
   Activity,
   Upload,
@@ -127,7 +127,7 @@ const STEPS: Step[] = [
 
 export function OnboardingTour({ open, onClose }: OnboardingTourProps) {
   const [stepIndex, setStepIndex] = useState(0);
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   const step = STEPS[stepIndex];
   const isLast = stepIndex === STEPS.length - 1;
@@ -143,7 +143,7 @@ export function OnboardingTour({ open, onClose }: OnboardingTourProps) {
   const finishTour = (navigateTo?: string) => {
     setStepIndex(0);
     onClose(true);
-    if (navigateTo) setLocation(navigateTo);
+    if (navigateTo) navigate(navigateTo);
   };
 
   const handleNext = () => {

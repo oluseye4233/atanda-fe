@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import NotFound from "@/pages/not-found";
 import { FEATURES } from "@shared/featureFlags";
-import { Link, useLocation, useRoute } from "wouter";
+import { Link, useMatch, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/useAuth";
 import { api } from "@/lib/api";
@@ -223,7 +223,7 @@ function MatrixListingCard({ listing }: { listing: SpcListing }) {
   const tier = hiveToTierBadge(listing.hiveScore);
   return (
     <Link
-      href={`/marketplace/${listing.id}`}
+      to={`/marketplace/${listing.id}`}
       data-testid={`card-listing-${listing.id}`}
       className={`group glass-card rounded-xl border transition-all hover:scale-[1.02] flex flex-col p-5 gap-3 ${
         tier === "ULTRA"
@@ -339,7 +339,7 @@ function ListingsList() {
         </div>
         <div className="flex items-center gap-3">
           {user && <CreditsHeader user={{ id: user.id, name: user.name }} />}
-          <Link href="/marketplace/publish">
+          <Link to="/marketplace/publish">
             <button
               data-testid="button-publish-spc"
               className="flex items-center gap-2 px-4 py-3 rounded-lg font-mono text-xs uppercase tracking-wider transition-all hover:scale-[1.02] bg-primary/10 text-primary border border-primary/30"
@@ -614,7 +614,7 @@ function AiAnalysisPanel({
             <span className="font-bold">Individual Pro</span>, School/Student,
             or Enterprise.{" "}
             <Link
-              href="/subscription"
+              to="/subscription"
               data-testid="link-upgrade-from-ai-gate"
               className="underline hover:text-amber-300"
             >
@@ -740,7 +740,7 @@ function TabStub({ id, label }: { id: string; label: string }) {
 
 function ListingDetail({ id }: { id: string }) {
   const { user } = useAuth();
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const [data, setData] = useState<{
     listing: SpcListing & { bodyLocked?: boolean; bodyLength?: number };
     creator: { id: string; name: string; contextCraftCertLevel: string } | null;
@@ -815,7 +815,7 @@ function ListingDetail({ id }: { id: string }) {
     return (
       <div className="max-w-3xl mx-auto py-12">
         <Link
-          href="/marketplace"
+          to="/marketplace"
           className="font-mono text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" /> Back to marketplace
@@ -843,7 +843,7 @@ function ListingDetail({ id }: { id: string }) {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <Link
-        href="/marketplace"
+        to="/marketplace"
         className="font-mono text-xs uppercase tracking-wider text-muted-foreground hover:text-primary inline-flex items-center gap-2"
         data-testid="link-back-marketplace"
       >
@@ -1039,7 +1039,7 @@ function ListingDetail({ id }: { id: string }) {
 
           {!user && (
             <div className="p-4 rounded-lg border border-white/10 bg-white/5 font-mono text-sm text-muted-foreground text-center">
-              <Link href="/login" className="text-primary hover:underline">
+              <Link to="/login" className="text-primary hover:underline">
                 Log in
               </Link>{" "}
               to purchase this SPC.
@@ -1348,7 +1348,7 @@ function SpcFeedbackPanel({ listing, viewer }: { listing: any; viewer: any }) {
 
 // ── Phase K — Corporate (institution-scoped) marketplace listing page ──
 function CorporateMarketplacePage() {
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const [data, setData] = useState<{
     institution: string;
     listings: any[];
@@ -1439,7 +1439,7 @@ function CorporateMarketplacePage() {
           {data.listings.map((l) => (
             <Link
               key={l.id}
-              href={`/marketplace/${l.id}`}
+              to={`/marketplace/${l.id}`}
               data-testid={`card-corporate-${l.id}`}
               className="glass-card p-4 rounded-xl border border-white/10 hover:border-primary/40 transition-colors block"
             >
@@ -1523,7 +1523,7 @@ function PricingMatrixBanner() {
 
 function PublishPage() {
   const { user } = useAuth();
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -1553,7 +1553,7 @@ function PublishPage() {
           Please log in to publish a Super Prompt Card.
         </p>
         <Link
-          href="/login"
+          to="/login"
           className="text-primary hover:underline font-mono text-xs uppercase mt-4 inline-block"
         >
           Go to login →
@@ -1568,7 +1568,7 @@ function PublishPage() {
     return (
       <div className="max-w-2xl mx-auto py-16 space-y-6">
         <Link
-          href="/marketplace"
+          to="/marketplace"
           className="font-mono text-xs uppercase tracking-wider text-muted-foreground hover:text-primary inline-flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" /> Back to marketplace
@@ -1589,7 +1589,7 @@ function PublishPage() {
             Your current level:{" "}
             <span style={{ color: current.color }}>{current.label}</span>
           </p>
-          <Link href="/play">
+          <Link to="/play">
             <button
               data-testid="button-go-ccge"
               className="px-5 py-3 rounded-lg font-mono text-xs uppercase tracking-wider bg-amber-400/10 text-amber-400 border border-amber-400/30 hover:bg-amber-400/15 transition-all"
@@ -1647,7 +1647,7 @@ function PublishPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <Link
-        href="/marketplace"
+        to="/marketplace"
         className="font-mono text-xs uppercase tracking-wider text-muted-foreground hover:text-primary inline-flex items-center gap-2"
         data-testid="link-back-from-publish"
       >
@@ -2000,16 +2000,15 @@ function PublishPage() {
 }
 
 export default function MarketplacePage() {
-  const [matchDetail, paramsDetail] = useRoute<{ id: string }>(
-    "/marketplace/:id",
-  );
-  const [matchPublish] = useRoute("/marketplace/publish");
-  const [matchSynergy] = useRoute("/marketplace/synergy");
-  const [matchRoundtable] = useRoute("/marketplace/roundtable");
-  const [matchSynthesis] = useRoute("/marketplace/synthesis");
-  const [matchForgeLab] = useRoute("/marketplace/forge-lab");
-  const [matchBonsai] = useRoute("/marketplace/bonsai");
-  const [matchCorporate] = useRoute("/marketplace/corporate");
+  const matchDetail = useMatch("/marketplace/:id");
+  const paramsDetail = matchDetail?.params as { id: string } | undefined;
+  const matchPublish = useMatch("/marketplace/publish");
+  const matchSynergy = useMatch("/marketplace/synergy");
+  const matchRoundtable = useMatch("/marketplace/roundtable");
+  const matchSynthesis = useMatch("/marketplace/synthesis");
+  const matchForgeLab = useMatch("/marketplace/forge-lab");
+  const matchBonsai = useMatch("/marketplace/bonsai");
+  const matchCorporate = useMatch("/marketplace/corporate");
 
   // Stage-1 / MVP: CLASS C marketplace sub-pages route through the always-on
   // `/marketplace/:id` matcher, so we MUST re-check the flag inside the
@@ -2152,7 +2151,7 @@ function ComplementaryPairsTab({ listingId }: { listingId: string }) {
         {rows.map((p) => (
           <Link
             key={p.partner.id}
-            href={`/marketplace/${p.partner.id}`}
+            to={`/marketplace/${p.partner.id}`}
             data-testid={`row-pair-${p.partner.id}`}
             className="block p-3 rounded-lg border border-white/10 bg-white/5 hover:border-primary/40 hover:bg-primary/5 transition-all"
           >
@@ -2538,7 +2537,7 @@ function RoundtablePage() {
           {seats.map((s) => (
             <Link
               key={s.seatNumber}
-              href={s.listing ? `/marketplace/${s.listing.id}` : "/marketplace"}
+              to={s.listing ? `/marketplace/${s.listing.id}` : "/marketplace"}
               data-testid={`row-seat-${s.seatNumber}`}
               className="block p-3 rounded-lg border border-white/10 bg-white/5 hover:border-amber-400/40 hover:bg-amber-400/5 transition-all"
             >
@@ -2657,7 +2656,7 @@ function SynthesisTab({ listingId }: { listingId: string }) {
           </h3>
         </div>
         <Link
-          href="/marketplace/synthesis"
+          to="/marketplace/synthesis"
           className="px-3 py-1.5 rounded font-mono text-[10px] uppercase tracking-wider bg-primary/10 text-primary border border-primary/30 hover:bg-primary/15"
           data-testid="link-open-synthesis"
         >
@@ -2857,7 +2856,7 @@ function SynthesisPage() {
           </div>
         </div>
         <Link
-          href="/marketplace"
+          to="/marketplace"
           className="font-mono text-xs uppercase tracking-wider text-muted-foreground hover:text-primary inline-flex items-center gap-2"
           data-testid="link-back-synthesis"
         >
@@ -2871,7 +2870,7 @@ function SynthesisPage() {
           data-testid="text-synthesis-login"
         >
           Please{" "}
-          <Link href="/login" className="underline">
+          <Link to="/login" className="underline">
             log in
           </Link>{" "}
           to run a synthesis.

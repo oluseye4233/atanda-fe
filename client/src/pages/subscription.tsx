@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { FEATURES } from "@shared/featureFlags";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/useAuth";
@@ -31,7 +31,7 @@ const PLAN_ICONS: Record<string, typeof User> = {
 
 export default function SubscriptionPage() {
   const { user, updateUser } = useAuth();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan>("INDIVIDUAL_FREE");
   const [isUpdating, setIsUpdating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -83,7 +83,7 @@ export default function SubscriptionPage() {
         setSelectedPlan(null);
         setTimeout(() => setShowSuccess(false), 3000);
       } else {
-        setLocation(session.redirectUrl);
+        navigate(session.redirectUrl);
       }
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to start checkout.");

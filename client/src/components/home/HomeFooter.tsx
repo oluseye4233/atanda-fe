@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { FEATURES } from "@shared/featureFlags";
 
 export function HomeFooter() {
@@ -17,20 +17,20 @@ export function HomeFooter() {
         </div>
         <div className="flex items-center gap-5">
           <Link
-            href="/privacy"
+            to="/privacy"
             className="hover:text-muted-foreground transition-colors duration-150"
           >
             Privacy
           </Link>
           <Link
-            href="/terms"
+            to="/terms"
             className="hover:text-muted-foreground transition-colors duration-150"
           >
             Terms
           </Link>
           {FEATURES.investorDemo && (
             <Link
-              href="/demo"
+              to="/demo"
               className="hover:text-muted-foreground transition-colors duration-150"
             >
               Demo

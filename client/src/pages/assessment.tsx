@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { BrainCircuit, ChevronRight, Activity } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
@@ -82,7 +82,7 @@ const QUESTIONS = [
 ];
 
 export default function AssessmentPage() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
@@ -159,7 +159,7 @@ export default function AssessmentPage() {
     }
 
     setTimeout(() => {
-      setLocation("/dashboard");
+      navigate("/dashboard");
     }, 2500);
   };
 

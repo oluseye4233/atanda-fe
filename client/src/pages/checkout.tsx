@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useRoute } from "wouter";
+import { useMatch, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/useAuth";
 import { api } from "@/lib/api";
@@ -18,8 +18,9 @@ type Session = {
 };
 
 export default function CheckoutPage() {
-  const [, params] = useRoute("/checkout/:id");
-  const [, setLocation] = useLocation();
+  const match = useMatch("/checkout/:id");
+  const params = match?.params as { id: string } | undefined;
+  const navigate = useNavigate();
   const { updateUser } = useAuth();
   const [step, setStep] = useState<Step>("loading");
   const [session, setSession] = useState<Session | null>(null);
@@ -57,7 +58,7 @@ export default function CheckoutPage() {
           ...(session.institution ? { institution: session.institution } : {}),
         } as any);
         setStep("complete");
-        setTimeout(() => setLocation("/subscription"), 1600);
+        setTimeout(() => navigate("/subscription"), 1600);
       } else {
         setStep("failed");
       }
@@ -94,7 +95,7 @@ export default function CheckoutPage() {
             <AlertTriangle className="h-10 w-10 text-destructive mx-auto" />
             <p className="font-display font-bold text-white uppercase tracking-wide" data-testid="text-checkout-error">{errorMsg}</p>
             <button
-              onClick={() => setLocation("/subscription")}
+              onClick={() => navigate("/subscription")}
               className="px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wide border border-white/20 text-white hover:bg-white/10"
               data-testid="button-back-to-plans"
             >
@@ -110,7 +111,7 @@ export default function CheckoutPage() {
                 <CreditCard className="h-6 w-6 text-primary" />
                 <h3 className="font-display font-bold text-xl text-white uppercase tracking-wider" data-testid="text-checkout-title">Checkout</h3>
               </div>
-              <button onClick={() => setLocation("/subscription")} className="text-muted-foreground hover:text-white" data-testid="button-close-checkout">
+              <button onClick={() => navigate("/subscription")} className="text-muted-foreground hover:text-white" data-testid="button-close-checkout">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -224,7 +225,7 @@ export default function CheckoutPage() {
             <p className="font-display font-bold text-white text-lg uppercase tracking-widest">Payment Failed</p>
             <p className="text-xs font-mono text-muted-foreground">Your card was declined (simulated).</p>
             <button
-              onClick={() => setLocation("/subscription")}
+              onClick={() => navigate("/subscription")}
               className="mt-2 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wide border border-white/20 text-white hover:bg-white/10"
               data-testid="button-back-after-failure"
             >

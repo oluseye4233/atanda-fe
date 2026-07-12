@@ -2,25 +2,14 @@ import {
   createContext,
   useContext,
   useCallback,
+  useEffect,
   type ReactNode,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { authService } from "@/services/auth.service";
+import type { AuthUser } from "@/types/auth";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-export interface AuthUser {
-  id: string;
-  username: string;
-  name: string;
-  role?: string | null;
-  department?: string | null;
-  seniority?: string | null;
-  location?: string | null;
-  contextCraftCertLevel?: string | null;
-  subscriptionPlan?: string | null;
-  subscriptionStatus?: string | null;
-  institution?: string | null;
-}
+export type { AuthUser };
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -35,7 +24,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const ME_KEY = ["/api/auth/me"] as const;
+const ME_KEY = ["/v1/auth/whoami"] as const;
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
@@ -46,10 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ME_KEY,
     queryFn: async () => {
       try {
-        const res = await fetch("/api/auth/me", { credentials: "include" });
-        if (res.status === 401 || res.status === 404) return null;
-        if (!res.ok) return null;
-        return res.json() as Promise<AuthUser>;
+        const res = await authService.whoami();
+        return res.data;
       } catch {
         return null;
       }
@@ -66,9 +53,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async () => {
-    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    try {
+      await authService.logout();
+    } catch {
+      // best-effort — clear local state regardless
+    }
     qc.setQueryData(ME_KEY, null);
     qc.clear();
+  }, [qc]);
+
+  // Listen for the 401-interceptor event so the context clears even when
+  // the failed request wasn't initiated through a React hook.
+  useEffect(() => {
+    const handler = () => {
+      qc.setQueryData(ME_KEY, null);
+      qc.clear();
+    };
+    window.addEventListener("ark:session-expired", handler);
+    return () => window.removeEventListener("ark:session-expired", handler);
   }, [qc]);
 
   const updateUser = useCallback(

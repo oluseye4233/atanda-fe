@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { Loader2, ArrowLeft, TrendingUp, Lightbulb, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
@@ -134,7 +134,7 @@ export default function ArkHistoryPage() {
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
         <div>
           <Link
-            href="/dashboard"
+            to="/dashboard"
             className="inline-flex items-center text-xs font-mono text-muted-foreground hover:text-primary uppercase tracking-widest mb-2"
             data-testid="link-back-dashboard"
           >
@@ -228,7 +228,7 @@ export default function ArkHistoryPage() {
                 {weakest.tip}
               </p>
               <Link
-                href="/play"
+                to="/play"
                 className="inline-flex items-center gap-1 mt-2 px-2 py-1 rounded border border-rose-400/40 hover:border-rose-300 hover:bg-rose-400/10 transition-all font-mono text-[10px] uppercase tracking-widest text-rose-200"
                 data-testid="link-history-practice-pillar"
               >

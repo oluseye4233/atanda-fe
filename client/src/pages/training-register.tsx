@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import {
   GraduationCap,
   Loader2,
@@ -193,7 +193,7 @@ export default function TrainingRegisterPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <Link
-        href="/training"
+        to="/training"
         data-testid="link-back-training"
         className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-primary"
       >

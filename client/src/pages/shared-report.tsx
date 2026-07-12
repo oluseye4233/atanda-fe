@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "wouter";
+import { useParams } from "react-router-dom";
 import { Loader2, Download } from "lucide-react";
 import { api } from "@/lib/api";
 import { ArkReportSheet } from "@/pages/report";

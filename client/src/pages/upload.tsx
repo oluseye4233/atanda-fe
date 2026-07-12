@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { FileText, ClipboardList, Linkedin, CheckCircle2, Circle, ArrowRight, Layers, Sparkles, Trash2, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { ResumeUploader } from "@/components/upload/ResumeUploader";
@@ -62,7 +62,7 @@ function formatUpdated(iso: string | null): string {
 }
 
 export default function UploadPage() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [mode, setMode] = useState<IntakeMode>("resume");
   const [sources, setSources] = useState<SourceStatus[]>([]);
@@ -225,7 +225,7 @@ export default function UploadPage() {
         {anyContributed && (
           <div className="flex justify-end mt-4">
             <Button
-              onClick={() => setLocation("/dashboard")}
+              onClick={() => navigate("/dashboard")}
               data-testid="button-view-dashboard"
               className="bg-primary/10 text-primary border border-primary/50 hover:bg-primary/20 font-mono uppercase tracking-widest rounded-none text-xs"
             >

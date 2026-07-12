@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Sparkles, ArrowRight, Briefcase, MapPin, Award, Users, TrendingUp, DollarSign, Building2, Store, Star, Activity } from "lucide-react";
 import { JSTGauge } from "@/components/dashboard/JSTGauge";
@@ -126,7 +126,7 @@ export default function DemoPage() {
             <span className="text-muted-foreground">· Live Sample Data · No Login Required</span>
           </div>
           <Link
-            href="/login"
+            to="/login"
             data-testid="link-investor-login"
             className="text-xs font-mono uppercase tracking-widest text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
           >
@@ -417,12 +417,12 @@ export default function DemoPage() {
             Enterprise dashboards, cohort grading, and prompt-craft certification unlock on the paid tiers.
           </p>
           <div className="flex justify-center gap-3 flex-wrap">
-            <Link href="/login" data-testid="link-demo-signup">
+            <Link to="/login" data-testid="link-demo-signup">
               <span className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-mono uppercase tracking-widest text-sm hover:bg-primary/90 transition-colors">
                 Get Started <ArrowRight className="w-4 h-4" />
               </span>
             </Link>
-            <Link href="/" data-testid="link-demo-home">
+            <Link to="/" data-testid="link-demo-home">
               <span className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-white/20 text-white font-mono uppercase tracking-widest text-sm hover:border-primary/40 transition-colors">
                 Back to Home
               </span>

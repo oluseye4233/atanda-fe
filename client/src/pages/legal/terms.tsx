@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { ArrowLeft, FileText } from "lucide-react";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -30,7 +30,7 @@ export default function TermsPage() {
       {/* Sticky nav bar */}
       <header className="sticky top-0 z-10 border-b border-white/6 bg-[#0d1117]/90 backdrop-blur-xl px-6 sm:px-10 h-14 flex items-center justify-between">
         <Link
-          href="/"
+          to="/"
           data-testid="link-home"
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-white transition-colors text-sm font-mono"
         >
@@ -85,7 +85,7 @@ export default function TermsPage() {
               Paid plans (Individual Pro, School / Student, Enterprise) renew
               monthly on the period anniversary. You may cancel at any time from{" "}
               <Link
-                href="/subscription"
+                to="/subscription"
                 className="text-primary hover:text-primary/80 transition-colors"
               >
                 /subscription

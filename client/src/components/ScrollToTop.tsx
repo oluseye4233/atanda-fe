@@ -1,23 +1,21 @@
 import { useEffect, useRef } from "react";
-import { useLocation } from "wouter";
+import { useLocation } from "react-router-dom";
 
 /**
  * Scrolls the window to the top on every navigation, except when the
- * destination pathname is identical to the current one (e.g. a same-page
- * link or a query-string change on the same route).
- *
- * Mount this once inside <App> — it renders nothing.
+ * destination pathname is identical to the current one.
+ * Mount once inside <App> — renders nothing.
  */
 export function ScrollToTop() {
-  const [location] = useLocation();
-  const prevLocation = useRef<string>(location);
+  const { pathname } = useLocation();
+  const prevPathname = useRef<string>(pathname);
 
   useEffect(() => {
-    if (location !== prevLocation.current) {
+    if (pathname !== prevPathname.current) {
       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     }
-    prevLocation.current = location;
-  }, [location]);
+    prevPathname.current = pathname;
+  }, [pathname]);
 
   return null;
 }

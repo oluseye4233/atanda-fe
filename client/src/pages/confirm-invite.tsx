@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "wouter";
+import { useParams } from "react-router-dom";
 import { Loader2, ShieldCheck, ShieldX, Clock } from "lucide-react";
 import { api } from "@/lib/api";
 import { ATANDA, BRAND_BAR } from "@/lib/arkReportTheme";

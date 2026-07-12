@@ -3,7 +3,7 @@ import { Loader2, FileText, FileImage, FileType2, Upload, Lock, X, ShieldCheck, 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/useAuth";
 import { api } from "@/lib/api";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { ATANDA, BRAND_BAR, Bar } from "@/lib/arkReportTheme";
 import {
   resumeFileStamp,
@@ -381,10 +381,10 @@ export default function ArkResumePage() {
           {error || "Unable to load your ARK Resume."}
         </p>
         <div className="flex flex-wrap gap-3 justify-center">
-          <Link href="/subscription" className="inline-flex items-center justify-center bg-primary text-primary-foreground font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md" data-testid="link-upgrade">
+          <Link to="/subscription" className="inline-flex items-center justify-center bg-primary text-primary-foreground font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md" data-testid="link-upgrade">
             Upgrade Plan
           </Link>
-          <Link href="/dashboard" className="inline-flex items-center justify-center border border-primary/50 text-primary hover:bg-primary/10 font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md" data-testid="link-verify-cards">
+          <Link to="/dashboard" className="inline-flex items-center justify-center border border-primary/50 text-primary hover:bg-primary/10 font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md" data-testid="link-verify-cards">
             Verify a Primitive Card
           </Link>
         </div>

@@ -7,7 +7,7 @@ import { useSubscription } from "@/lib/useSubscription";
 import UpgradeGate from "@/components/UpgradeGate";
 import { reportFileStamp, adviserFileStamp, exportReportImage } from "@/lib/arkReportExport";
 import { isEmptyProfile } from "@shared/assessmentMerge";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { ATANDA, BRAND_BAR, Bar } from "@/lib/arkReportTheme";
 import { ArkAdviserSheet } from "@/pages/adviser-report";
 import atandaLogo from "@assets/WEB_LEARNING_SYSTEMS_(1920_x_1280_px)_(2)_1779729580194.png";
@@ -678,7 +678,7 @@ export default function ReportPage() {
           You've removed every source that fed your ARK profile, so there's nothing to summarise yet. Add a résumé, self-assessment or LinkedIn profile and your ARK Report will rebuild automatically.
         </p>
         <Link
-          href="/upload"
+          to="/upload"
           data-testid="button-report-add-source"
           className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-mono uppercase tracking-wider px-6 py-3 text-sm font-medium rounded-md transition-all hover:scale-[1.02]"
         >

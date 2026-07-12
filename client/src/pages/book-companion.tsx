@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   BookOpen,
@@ -177,7 +177,7 @@ function ChapterCard({ node, highlight }: { node: JourneyNodeView; highlight: bo
           {node.earned ? `Earned via ${node.earnedVia ?? "flywheel"}` : `Tier: ${node.tierArt}`}
         </span>
         <Link
-          href={`${node.deepLink}${node.deepLink.includes("?") ? "&" : "?"}book=${node.id}`}
+          to={`${node.deepLink}${node.deepLink.includes("?") ? "&" : "?"}book=${node.id}`}
           className="inline-flex items-center gap-1.5 border border-primary/50 text-primary hover:bg-primary/10 font-mono text-xs uppercase tracking-widest h-9 px-3 rounded-md"
           data-testid={`link-quest-${node.id}`}
         >
@@ -307,7 +307,7 @@ export default function BookCompanionPage() {
               unlocked. Scan the code (or open the link), sign in, and your single-use seat is reserved instantly.
             </p>
             <Link
-              href="/f1000"
+              to="/f1000"
               data-testid="link-book-f1000"
               className="inline-flex items-center gap-1.5 text-primary font-mono text-xs uppercase tracking-wider hover:text-primary/80 transition-colors"
             >
@@ -330,7 +330,7 @@ export default function BookCompanionPage() {
             </div>
           </div>
           <Link
-            href="/login"
+            to="/login"
             className="inline-flex items-center justify-center bg-primary text-black font-mono text-xs uppercase tracking-widest h-10 px-5 rounded-md"
             data-testid="link-login"
           >

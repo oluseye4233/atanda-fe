@@ -4,7 +4,7 @@
 // with its own dashboard features). The target project is not yet hosted, so the
 // launch action is a PLACEHOLDER until the deployment URL is wired in.
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -80,7 +80,7 @@ export function CommandCentrePage() {
           Log in to access the ATANDA Command Centre.
         </p>
         <Link
-          href="/login"
+          to="/login"
           className="text-primary hover:underline font-mono text-xs uppercase mt-4 inline-block"
           data-testid="link-command-centre-login"
         >
@@ -93,7 +93,7 @@ export function CommandCentrePage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6" data-testid="page-command-centre">
       <Link
-        href="/marketplace"
+        to="/marketplace"
         className="font-mono text-xs uppercase tracking-wider text-muted-foreground hover:text-primary inline-flex items-center gap-2"
         data-testid="link-back-from-command-centre"
       >
@@ -161,7 +161,7 @@ export function CommandCentrePage() {
               </button>
             ) : isConnected && !isSubscriber ? (
               <Link
-                href="/subscription"
+                to="/subscription"
                 data-testid="button-launch-command-centre"
                 className="inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-5 py-3 font-mono text-xs uppercase tracking-wider text-primary font-bold hover:bg-primary/20 transition-all"
               >

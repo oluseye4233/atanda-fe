@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Lock, ArrowRight, Mail, User, Eye, EyeOff } from "lucide-react";
 
@@ -47,7 +47,7 @@ export default function SignupPage() {
 
         <div className="relative z-10">
           <Link
-            href="/"
+            to="/"
             className="font-display font-bold text-primary text-xl tracking-widest hover:text-primary/80 transition-colors"
           >
             ARK
@@ -107,7 +107,7 @@ export default function SignupPage() {
           {/* Mobile logo */}
           <div className="lg:hidden mb-8 text-center">
             <Link
-              href="/"
+              to="/"
               className="font-display font-bold text-primary text-2xl tracking-widest"
             >
               ARK
@@ -207,11 +207,11 @@ export default function SignupPage() {
 
             <p className="text-[11px] text-muted-foreground/50 leading-relaxed">
               By signing up you agree to our{" "}
-              <Link href="/terms" className="text-primary/70 hover:text-primary transition-colors">
+              <Link to="/terms" className="text-primary/70 hover:text-primary transition-colors">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="/privacy" className="text-primary/70 hover:text-primary transition-colors">
+              <Link to="/privacy" className="text-primary/70 hover:text-primary transition-colors">
                 Privacy Policy
               </Link>
               .
@@ -243,7 +243,7 @@ export default function SignupPage() {
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link
-              href="/login"
+              to="/login"
               data-testid="link-toggle-auth-mode"
               className="text-primary hover:text-primary/80 transition-colors font-medium"
             >

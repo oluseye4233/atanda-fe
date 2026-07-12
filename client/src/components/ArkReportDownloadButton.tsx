@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { FileText, Lock } from "lucide-react";
 import { FEATURES } from "@shared/featureFlags";
 import { useAuth } from "@/lib/useAuth";
@@ -16,7 +16,7 @@ export function ArkReportDownloadButton({ className = "" }: { className?: string
   // Gated surface — route the user to upgrade rather than into a Pro-only report.
   if (!canAccessReport) {
     return (
-      <Link href="/subscription" data-testid="link-unlock-ark-report">
+      <Link to="/subscription" data-testid="link-unlock-ark-report">
         <a
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wider border border-amber-300/30 bg-amber-300/10 text-amber-200 hover:bg-amber-300/20 transition-colors ${className}`}
         >
@@ -28,7 +28,7 @@ export function ArkReportDownloadButton({ className = "" }: { className?: string
   }
 
   return (
-    <Link href="/report" data-testid="button-download-ark-report">
+    <Link to="/report" data-testid="button-download-ark-report">
       <a
         className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wider transition-all hover:scale-[1.02] border border-primary/40 bg-primary/15 text-primary hover:bg-primary hover:text-primary-foreground ${className}`}
       >

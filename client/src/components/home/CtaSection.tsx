@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { Upload, LogIn } from "lucide-react";
 
 export function CtaSection() {
@@ -17,7 +17,7 @@ export function CtaSection() {
         </p>
         <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
           <Link
-            href="/upload"
+            to="/upload"
             data-testid="button-cta-upload"
             className="group inline-flex items-center gap-2 h-11 px-7 rounded-md bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 hover:-translate-y-0.5 transition-all duration-200"
             style={{
@@ -29,7 +29,7 @@ export function CtaSection() {
             Get Started Free
           </Link>
           <Link
-            href="/login"
+            to="/login"
             data-testid="button-cta-login"
             className="group inline-flex items-center gap-2 h-11 px-7 rounded-md border border-white/15 text-muted-foreground text-sm hover:border-white/30 hover:text-foreground hover:bg-white/4 transition-all duration-200"
           >

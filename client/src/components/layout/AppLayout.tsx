@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import atandaLogo from "@assets/WEB_LEARNING_SYSTEMS_(1920_x_1280_px)_(2)_1779729580194.png";
 import {
@@ -131,7 +131,7 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
   return (
     <div className="flex flex-col h-full">
       <Link
-        href="/"
+        to="/"
         onClick={onNavigate}
         data-testid="link-logo-home"
         className="p-6 flex items-center gap-3 hover:opacity-80 transition-opacity"
@@ -155,7 +155,7 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
                 return (
                   <li key={item.name}>
                     <Link
-                      href={item.href}
+                      to={item.href}
                       onClick={onNavigate}
                       data-testid={`link-nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                       title={item.hint}
@@ -190,7 +190,7 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
                 return (
                   <li key={item.name}>
                     <Link
-                      href={item.href}
+                      to={item.href}
                       onClick={onNavigate}
                       data-testid={`link-admin-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                       title={item.hint}
@@ -224,7 +224,7 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
               return (
                 <li key={item.name}>
                   <Link
-                    href={item.href}
+                    to={item.href}
                     onClick={onNavigate}
                     data-testid={`link-${item.name.toLowerCase()}`}
                     title={item.hint}
@@ -293,17 +293,17 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const [location] = useLocation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { isOpen, open, close } = useOnboarding();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { user, logout } = useAuth();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
 
   const handleLogout = useCallback(async () => {
     await logout();
-    setLocation("/");
-  }, [logout, setLocation]);
+    navigate("/");
+  }, [logout, navigate]);
   // Pick a single bell mount per viewport — render only one component so we
   // never double-subscribe to the notification stream or display divergent
   // unread counters on the desktop layout.
@@ -331,7 +331,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   // otherwise we'd open a doomed EventSource against a flagged-off endpoint.
   useNotificationStream(!!user?.id && FEATURES.notifications, undefined, onSeat);
 
-  if (location === '/' || location === '/login' || location === '/signup') {
+  const pathname = location.pathname;
+
+  if (pathname === '/' || pathname === '/login' || pathname === '/signup') {
     return <main className="min-h-screen bg-background text-foreground font-sans">{children}</main>;
   }
 
@@ -339,7 +341,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className="min-h-screen flex flex-col sm:flex-row bg-background">
       {/* Mobile top bar (< md): hamburger drawer */}
       <header className="sm:hidden sticky top-0 z-30 flex items-center justify-between pb-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-[calc(0.75rem+env(safe-area-inset-top))] border-b border-primary/20 bg-background/90 backdrop-blur-md">
-        <Link href="/" data-testid="link-logo-home-mobile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <Link to="/" data-testid="link-logo-home-mobile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <Activity className="h-6 w-6 text-primary animate-pulse" />
           <span className="font-display font-bold text-primary tracking-widest text-sm">ARK</span>
         </Link>
@@ -357,7 +359,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             </button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-[280px] glass border-primary/20">
-            <SidebarBody location={location} openTour={open} onNavigate={() => setMobileNavOpen(false)} onLogout={handleLogout} />
+        <SidebarBody location={pathname} openTour={open} onNavigate={() => setMobileNavOpen(false)} onLogout={handleLogout} />
           </SheetContent>
         </Sheet>
         </div>
@@ -365,7 +367,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Desktop sidebar (>= md) */}
       <aside className="hidden sm:flex sm:w-56 md:w-64 lg:w-72 glass border-r border-primary/20 flex-shrink-0 z-10 sticky top-0 h-screen">
-        <SidebarBody location={location} openTour={open} onLogout={handleLogout} />
+        <SidebarBody location={pathname} openTour={open} onLogout={handleLogout} />
       </aside>
 
       {/* Main Content */}
@@ -396,8 +398,8 @@ export function AppLayout({ children }: AppLayoutProps) {
               >
                 Tour
               </button>
-              <Link href="/privacy" data-testid="link-privacy" className="hover:text-primary transition-colors">Privacy</Link>
-              <Link href="/terms" data-testid="link-terms" className="hover:text-primary transition-colors">Terms</Link>
+              <Link to="/privacy" data-testid="link-privacy" className="hover:text-primary transition-colors">Privacy</Link>
+              <Link to="/terms" data-testid="link-terms" className="hover:text-primary transition-colors">Terms</Link>
             </div>
           </div>
         </footer>
