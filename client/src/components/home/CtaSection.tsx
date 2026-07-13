@@ -17,7 +17,7 @@ export function CtaSection() {
         </p>
         <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
           <Link
-            to="/upload"
+            to="/signup"
             data-testid="button-cta-upload"
             className="group inline-flex items-center gap-2 h-11 px-7 rounded-md bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 hover:-translate-y-0.5 transition-all duration-200"
             style={{

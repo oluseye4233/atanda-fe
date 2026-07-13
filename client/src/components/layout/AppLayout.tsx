@@ -64,6 +64,13 @@ interface NavGroup {
 interface FlaggedNavItem extends NavItem { flag: keyof typeof FEATURES | null }
 interface FlaggedNavGroup { label: string; items: FlaggedNavItem[] }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MVP LAUNCH SCOPE — only two modules are live:
+//   1. Career Assessment  (Upload CV → JST score + reports)
+//   2. Upskilling Games    (CCGE Skill Games)
+// Everything else is commented out until its module is picked up again.
+// Do NOT delete — these are next in the backlog.
+// ─────────────────────────────────────────────────────────────────────────────
 const ALL_NAV_GROUPS: FlaggedNavGroup[] = [
   {
     label: "Analyze",
@@ -72,35 +79,39 @@ const ALL_NAV_GROUPS: FlaggedNavGroup[] = [
       { name: "Upload CV", href: "/upload", icon: Upload, hint: "Run a new assessment", flag: null },
       { name: "Intelligence Hub", href: "/dashboard", icon: BarChart3, hint: "Your scores & insights", flag: null },
       { name: "ARK Resume", href: "/ark-resume", icon: FileText, hint: "ATS-optimized verified resume", flag: "arkResume" },
-      { name: "Book Companion", href: "/book", icon: BookOpen, hint: "Context Craft reading journey", flag: "bookCompanion" },
+      // ── Out of MVP scope ──
+      // { name: "Book Companion", href: "/book", icon: BookOpen, hint: "Context Craft reading journey", flag: "bookCompanion" },
     ],
   },
   {
     label: "Explore",
     items: [
       { name: "Skill Games", href: "/play", icon: Gamepad2, hint: "CCGE Arena — earn points", flag: null },
-      { name: "Marketplace", href: "/marketplace", icon: ShoppingBag, hint: "SPHINX listings", flag: null },
-      { name: "Corporate Marketplace", href: "/marketplace/corporate", icon: Building2, hint: "Your institution's SPCs", flag: "corporateMarketplace" },
-      { name: "Roundtable", href: "/marketplace/roundtable", icon: Activity, hint: "Top-12 SPC leaderboard", flag: "sphinxAdvanced" },
-      { name: "Synergy Lab", href: "/marketplace/synergy", icon: HelpCircle, hint: "Test card combinations", flag: "sphinxAdvanced" },
-      { name: "Forge Lab", href: "/marketplace/forge-lab", icon: Upload, hint: "Upload .docx → HIVE pre-check", flag: "forgeLabDocx" },
       { name: "Career Mobility", href: "/pathways", icon: Map, hint: "Pivot opportunities", flag: null },
-      { name: "Training Providers", href: "/training", icon: GraduationCap, hint: "JST-matched certifications", flag: "trainingProviders" },
+      // ── Out of MVP scope (SPHINX marketplace + training) ──
+      // { name: "Marketplace", href: "/marketplace", icon: ShoppingBag, hint: "SPHINX listings", flag: null },
+      // { name: "Corporate Marketplace", href: "/marketplace/corporate", icon: Building2, hint: "Your institution's SPCs", flag: "corporateMarketplace" },
+      // { name: "Roundtable", href: "/marketplace/roundtable", icon: Activity, hint: "Top-12 SPC leaderboard", flag: "sphinxAdvanced" },
+      // { name: "Synergy Lab", href: "/marketplace/synergy", icon: HelpCircle, hint: "Test card combinations", flag: "sphinxAdvanced" },
+      // { name: "Forge Lab", href: "/marketplace/forge-lab", icon: Upload, hint: "Upload .docx → HIVE pre-check", flag: "forgeLabDocx" },
+      // { name: "Training Providers", href: "/training", icon: GraduationCap, hint: "JST-matched certifications", flag: "trainingProviders" },
     ],
   },
-  {
-    label: "Match",
-    items: [
-      { name: "Talent Exchange", href: "/matchmaking", icon: Network, hint: "Verified job & team matching", flag: "matchmaking" },
-    ],
-  },
-  {
-    label: "Manage",
-    items: [
-      { name: "Workforce", href: "/enterprise", icon: Users, hint: "Org-wide view", flag: "enterpriseDashboard" },
-      { name: "Workforce Intelligence", href: "/workforce", icon: Building2, hint: "Import HR roster + ARK breakdowns", flag: "institutionWorkforce" },
-    ],
-  },
+  // ── Out of MVP scope (Talent Exchange) ──
+  // {
+  //   label: "Match",
+  //   items: [
+  //     { name: "Talent Exchange", href: "/matchmaking", icon: Network, hint: "Verified job & team matching", flag: "matchmaking" },
+  //   ],
+  // },
+  // ── Out of MVP scope (Workforce / Enterprise) ──
+  // {
+  //   label: "Manage",
+  //   items: [
+  //     { name: "Workforce", href: "/enterprise", icon: Users, hint: "Org-wide view", flag: "enterpriseDashboard" },
+  //     { name: "Workforce Intelligence", href: "/workforce", icon: Building2, hint: "Import HR roster + ARK breakdowns", flag: "institutionWorkforce" },
+  //   ],
+  // },
 ];
 
 // Filter out items whose flag is off; drop groups that end up empty.
@@ -110,8 +121,9 @@ const NAV_GROUPS: NavGroup[] = ALL_NAV_GROUPS
 
 const ALL_SECONDARY_LINKS: FlaggedNavItem[] = [
   { name: "Profile", href: "/profile", icon: User, hint: "Account", flag: null },
-  { name: "Institution", href: "/school", icon: GraduationCap, hint: "School dashboard", flag: "cohorts" },
   { name: "Subscription", href: "/subscription", icon: CreditCard, hint: "Plans & billing", flag: null },
+  // ── Out of MVP scope (Institution / cohorts) ──
+  // { name: "Institution", href: "/school", icon: GraduationCap, hint: "School dashboard", flag: "cohorts" },
 ];
 
 const SECONDARY_LINKS: NavItem[] = ALL_SECONDARY_LINKS.filter(i => i.flag === null || FEATURES[i.flag]);

@@ -30,10 +30,6 @@ export const sphinxService = {
   analyzeListing: (id: string) =>
     apiClient.post<HiveAnalysis>(`/sphinx/listings/${id}/analyze`),
 
-  /**
-   * POST /v1/sphinx/listings/:id/purchase
-   * Atomic 70/30 split. You cannot buy your own listing.
-   */
   purchaseListing: (id: string) =>
     apiClient.post<PurchaseResponse>(`/sphinx/listings/${id}/purchase`),
 };

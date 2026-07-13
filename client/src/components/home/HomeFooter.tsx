@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { FEATURES } from "@shared/featureFlags";
 
 export function HomeFooter() {
   return (
@@ -28,6 +27,7 @@ export function HomeFooter() {
           >
             Terms
           </Link>
+          {/* Out of MVP scope — investor demo route removed from the bundle.
           {FEATURES.investorDemo && (
             <Link
               to="/demo"
@@ -35,7 +35,7 @@ export function HomeFooter() {
             >
               Demo
             </Link>
-          )}
+          )} */}
         </div>
         <span>© 2026 ARK Platform</span>
       </div>
