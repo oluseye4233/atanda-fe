@@ -5,12 +5,21 @@ export const resumeService = {
   /**
    * POST /v1/resume/upload — multipart/form-data (≤20 MB)
    * Uploads a résumé file, analyzes it, and recalculates ARK identity.
+   *
+   * Content-Type must be explicitly cleared (not set to a fixed
+   * "multipart/form-data" string, which lacks the required boundary
+   * parameter). `apiClient` defaults to "application/json" for every
+   * request, which — if left in place here — makes axios JSON-stringify the
+   * FormData instead of sending it as multipart. Overriding it to
+   * `undefined` for this one request lets axios pass the FormData through
+   * untouched, so the browser's XHR sets the correct
+   * "multipart/form-data; boundary=..." header itself.
    */
   upload: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);
     return apiClient.post<AnalyzeResponse>("/resume/upload", fd, {
-      headers: { "Content-Type": "multipart/form-data" },
+      headers: { "Content-Type": undefined },
     });
   },
 
