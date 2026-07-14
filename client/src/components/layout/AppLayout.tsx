@@ -6,21 +6,13 @@ import {
   Upload,
   Activity,
   Map,
-  Users,
-  Home as HomeIcon,
   CreditCard,
   User,
-  GraduationCap,
   Gamepad2,
-  ShoppingBag,
-  Building2,
   HelpCircle,
-  BookOpen,
   Menu,
-  X,
   Shield,
   FileText,
-  Network,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -75,9 +67,8 @@ const ALL_NAV_GROUPS: FlaggedNavGroup[] = [
   {
     label: "Analyze",
     items: [
-      { name: "Home", href: "/", icon: HomeIcon, hint: "Landing & overview", flag: null },
-      { name: "Upload CV", href: "/upload", icon: Upload, hint: "Run a new assessment", flag: null },
       { name: "Intelligence Hub", href: "/dashboard", icon: BarChart3, hint: "Your scores & insights", flag: null },
+      { name: "Upload CV", href: "/upload", icon: Upload, hint: "Run a new assessment", flag: null },
       { name: "ARK Resume", href: "/ark-resume", icon: FileText, hint: "ATS-optimized verified resume", flag: "arkResume" },
       // ── Out of MVP scope ──
       // { name: "Book Companion", href: "/book", icon: BookOpen, hint: "Context Craft reading journey", flag: "bookCompanion" },
@@ -143,19 +134,19 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
   return (
     <div className="flex flex-col h-full">
       <Link
-        to="/"
+        to="/dashboard"
         onClick={onNavigate}
         data-testid="link-logo-home"
-        className="p-6 flex items-center gap-3 hover:opacity-80 transition-opacity"
+        className="flex items-center gap-3 border-b border-primary/15 px-4 py-4 hover:bg-primary/5 transition-colors"
       >
-        <Activity className="h-8 w-8 text-primary animate-pulse" />
-        <div>
-          <h1 className="text-xl font-display font-bold text-primary tracking-widest leading-none">ARK</h1>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-mono">Synthesized Intel</p>
+        <Activity className="h-7 w-7 shrink-0 text-primary animate-pulse" />
+        <div className="min-w-0">
+          <p className="text-lg font-sans font-bold text-primary tracking-tight leading-none">ARK</p>
+          <p className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground font-mono">Career intelligence</p>
         </div>
       </Link>
 
-      <nav className="px-4 py-4 flex-1 overflow-y-auto" aria-label="Primary">
+      <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Primary">
         {NAV_GROUPS.map((group) => (
           <div key={group.label} className="mb-5">
             <p className="px-2 mb-2 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/70">
@@ -179,7 +170,7 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
                       )}
                     >
                       <item.icon className={cn(
-                        "h-4 w-4 flex-shrink-0 transition-colors",
+                        "h-4 w-4 shrink-0 transition-colors",
                         isActive ? "text-primary" : "opacity-70 group-hover:opacity-100 group-hover:text-primary/70"
                       )} />
                       <span className="truncate">{item.name}</span>
@@ -214,7 +205,7 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
                       )}
                     >
                       <item.icon className={cn(
-                        "h-4 w-4 flex-shrink-0",
+                        "h-4 w-4 shrink-0",
                         isActive ? "text-amber-300" : "opacity-70 group-hover:opacity-100"
                       )} />
                       <span className="truncate">{item.name}</span>
@@ -248,7 +239,7 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
                     )}
                   >
                     <item.icon className={cn(
-                      "h-4 w-4 flex-shrink-0",
+                      "h-4 w-4 shrink-0",
                       isActive ? "text-primary" : "opacity-70 group-hover:opacity-100"
                     )} />
                     <span className="truncate">{item.name}</span>
@@ -273,31 +264,31 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
         </div>
       </nav>
 
-      <div className="p-4 border-t border-primary/20 bg-background/80 backdrop-blur-sm space-y-3">
-        <button
-          type="button"
-          onClick={() => { openTour(); onNavigate?.(); }}
-          data-testid="button-launch-onboarding"
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-[11px] font-mono uppercase tracking-widest text-muted-foreground hover:text-primary hover:bg-primary/5 border border-transparent hover:border-primary/30 transition-all duration-300 group"
-        >
-          <HelpCircle className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100" />
-          <span>Take the tour</span>
-        </button>
-        <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
-          <span>SYS.STATUS</span>
-          <span className="text-secondary flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-            ONLINE
-          </span>
+      <div className="flex items-center justify-between gap-2 border-t border-primary/15 bg-background/80 px-3 py-2.5 backdrop-blur-sm">
+        <div className="flex min-w-0 items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-secondary animate-pulse" aria-hidden="true" />
+          <span className="truncate">System online</span>
         </div>
-        <div className="flex flex-col items-center gap-2 pt-3 border-t border-white/5">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 font-mono">Powered By</span>
-          <img
-            src={atandaLogo}
-            alt="Atanda"
-            data-testid="img-powered-by-atanda"
-            className="h-24 w-auto object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.18)] hover:scale-[1.04] transition-transform"
-          />
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => { openTour(); onNavigate?.(); }}
+            data-testid="button-launch-onboarding"
+            aria-label="Start product tour"
+            title="Take the tour"
+            className="flex h-11 w-11 items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </button>
+          <div className="flex items-center gap-1.5" title="Powered by Atanda">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60">By</span>
+            <img
+              src={atandaLogo}
+              alt="Atanda"
+              data-testid="img-powered-by-atanda"
+              className="h-6 w-auto object-contain opacity-80"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -353,9 +344,9 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className="min-h-screen flex flex-col sm:flex-row bg-background">
       {/* Mobile top bar (< md): hamburger drawer */}
       <header className="sm:hidden sticky top-0 z-30 flex items-center justify-between pb-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-[calc(0.75rem+env(safe-area-inset-top))] border-b border-primary/20 bg-background/90 backdrop-blur-md">
-        <Link to="/" data-testid="link-logo-home-mobile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <Link to="/dashboard" data-testid="link-logo-home-mobile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <Activity className="h-6 w-6 text-primary animate-pulse" />
-          <span className="font-display font-bold text-primary tracking-widest text-sm">ARK</span>
+          <span className="font-sans font-bold text-primary tracking-tight text-sm">ARK</span>
         </Link>
         <div className="flex items-center gap-2">
           {isMobile && FEATURES.notifications && <NotificationBell />}
@@ -378,7 +369,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </header>
 
       {/* Desktop sidebar (>= md) */}
-      <aside className="hidden sm:flex sm:w-56 md:w-64 lg:w-72 glass border-r border-primary/20 flex-shrink-0 z-10 sticky top-0 h-screen">
+      <aside className="hidden sm:flex sm:w-56 md:w-64 lg:w-72 glass border-r border-primary/20 shrink-0 z-10 sticky top-0 h-screen">
         <SidebarBody location={pathname} openTour={open} onLogout={handleLogout} />
       </aside>
 
