@@ -2,8 +2,8 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { BrainCircuit, ChevronRight, Activity } from "lucide-react";
-import { useAuth } from "@/lib/useAuth";
-import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { resumeService } from "@/services/resume.service";
 import { LiveJSTScore } from "@/components/LiveJSTScore";
 
 const QUESTIONS = [
@@ -151,8 +151,15 @@ export default function AssessmentPage() {
 
     if (user) {
       try {
+        // NOTE: the real backend's POST /v1/assessments (resumeService.analyzeText)
+        // analyzes pasted text as a full, standalone assessment — there is no
+        // documented "source: quiz" cumulative-merge behavior like the old
+        // /api/assessment/text stub assumed. This will create/replace the
+        // user's assessment from the quiz text alone rather than blending it
+        // with a prior resume upload. Flag this to product/backend if the
+        // cumulative-merge behavior is still required.
         const text = buildQuizText(finalAnswers, texts, readinessProfile);
-        await api.submitAssessmentText({ text, source: "quiz" });
+        await resumeService.analyzeText(text);
       } catch (err) {
         console.error("Failed to save assessment:", err);
       }
