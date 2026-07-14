@@ -22,6 +22,7 @@ import { useAuth } from "@/lib/useAuth";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { AiBudgetBanner } from "@/components/layout/AiBudgetBanner";
+import { EmailVerificationBanner } from "@/components/layout/EmailVerificationBanner";
 import { useNotificationStream, type ArkRoundtableEvent } from "@/lib/useArkStream";
 import { useToast } from "@/hooks/use-toast";
 import { useCallback } from "react";
@@ -132,12 +133,12 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
   const { user } = useAuth();
   const isAdmin = !!(user as any)?.isAdmin;
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full w-full flex-col">
       <Link
         to="/dashboard"
         onClick={onNavigate}
         data-testid="link-logo-home"
-        className="flex items-center gap-3 border-b border-primary/15 px-4 py-4 hover:bg-primary/5 transition-colors"
+        className="flex w-full items-center gap-3 border-b border-primary/15 px-4 py-4 hover:bg-primary/5 transition-colors"
       >
         <Activity className="h-7 w-7 shrink-0 text-primary animate-pulse" />
         <div className="min-w-0">
@@ -163,7 +164,7 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
                       data-testid={`link-nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                       title={item.hint}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group font-mono text-sm uppercase tracking-wide",
+                        "flex w-full items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group font-mono text-sm uppercase tracking-wide",
                         isActive
                           ? "bg-primary/10 text-primary border border-primary/30 shadow-[0_0_15px_rgba(0,0,0,0.5)]"
                           : "text-muted-foreground hover:bg-white/5 hover:text-foreground border border-transparent"
@@ -198,7 +199,7 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
                       data-testid={`link-admin-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                       title={item.hint}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 font-mono text-xs uppercase tracking-wide group border",
+                        "flex w-full items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 font-mono text-xs uppercase tracking-wide group border",
                         isActive
                           ? "bg-amber-400/10 text-amber-300 border-amber-400/30"
                           : "text-muted-foreground hover:bg-white/5 hover:text-amber-300 border-transparent"
@@ -232,7 +233,7 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
                     data-testid={`link-${item.name.toLowerCase()}`}
                     title={item.hint}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 font-mono text-xs uppercase tracking-wide group border",
+                      "flex w-full items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 font-mono text-xs uppercase tracking-wide group border",
                       isActive
                         ? "bg-primary/10 text-primary border-primary/30"
                         : "text-muted-foreground hover:bg-white/5 hover:text-foreground border-transparent"
@@ -376,6 +377,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Main Content */}
       <main className="flex-1 relative overflow-x-hidden">
         <AiBudgetBanner />
+        {user?.isVerified === false && <EmailVerificationBanner email={user.email} />}
         {/* Desktop floating bell (>= sm) — sits in the top-right of the main column. */}
         {!isMobile && FEATURES.notifications && (
           <div className="hidden sm:flex absolute top-4 right-4 z-30">
