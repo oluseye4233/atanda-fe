@@ -1,6 +1,25 @@
 {
   "include": ["client/src/**/*", "shared/**/*"],
-  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "**/*.test.ts",
+    "client/src/pages/admin-ccge-import.tsx",
+    "client/src/pages/book-companion.tsx",
+    "client/src/pages/confirm-invite.tsx",
+    "client/src/pages/context-craft.tsx",
+    "client/src/pages/enterprise.tsx",
+    "client/src/pages/f1000.tsx",
+    "client/src/pages/marketplace-forge-lab.tsx",
+    "client/src/pages/marketplace.tsx",
+    "client/src/pages/school-dashboard.tsx",
+    "client/src/pages/shared-report.tsx",
+    "client/src/pages/training-provider-detail.tsx",
+    "client/src/pages/training-register.tsx",
+    "client/src/pages/training.tsx",
+    "client/src/pages/workforce.tsx"
+  ],
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",

@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { Bell, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/useAuth";
-import { api } from "@/lib/api";
 import { useNotificationStream, type ArkNotification, type ArkRoundtableEvent } from "@/lib/useArkStream";
 import { cn } from "@/lib/utils";
+import { notificationsService } from "@/services/notifications.service";
+import type { Notification } from "@/types/notifications";
 
 function formatRelative(iso: string): string {
   const diff = Math.max(0, Date.now() - new Date(iso).getTime());
@@ -27,19 +28,27 @@ const TYPE_BADGE: Record<string, { label: string; color: string }> = {
 export function NotificationBell() {
   const { user } = useAuth();
   const enabled = !!user?.id;
-  const [items, setItems] = useState<ArkNotification[]>([]);
+  const [items, setItems] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
 
   // Initial fetch on mount.
   useEffect(() => {
     if (!enabled) return;
-    api.getNotifications()
-      .then((r: { items: ArkNotification[]; unread: number }) => {
-        setItems(r.items || []);
-        setUnread(r.unread || 0);
+    let cancelled = false;
+    notificationsService.list()
+      .then(({ data }) => {
+        if (cancelled) return;
+        setItems(data.items);
+        setUnread(data.unread);
       })
-      .catch(() => null);
+      .catch(() => {
+        if (!cancelled) {
+          setItems([]);
+          setUnread(0);
+        }
+      });
+    return () => { cancelled = true; };
   }, [enabled]);
 
   // Live stream: prepend new notifications, bump unread counter.
@@ -59,7 +68,7 @@ export function NotificationBell() {
   const markAllRead = async () => {
     if (unread === 0) return;
     try {
-      await api.markNotificationsRead();
+      await notificationsService.markRead();
       setUnread(0);
       setItems((prev) => prev.map((it) => ({ ...it, readAt: it.readAt ?? new Date().toISOString() })));
     } catch {}
@@ -133,7 +142,10 @@ export function NotificationBell() {
                 // close transition naturally otherwise).
                 const handleClick = () => {
                   if (isUnread) {
-                    api.markNotificationsRead([n.id]).catch(() => null);
+                    notificationsService.markRead([n.id]).catch(() => {
+                      setItems((prev) => prev.map((item) => item.id === n.id ? { ...item, readAt: null } : item));
+                      setUnread((count) => count + 1);
+                    });
                     setItems((prev) => prev.map((it) => it.id === n.id ? { ...it, readAt: new Date().toISOString() } : it));
                     setUnread((u) => Math.max(0, u - 1));
                   }

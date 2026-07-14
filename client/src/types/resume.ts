@@ -17,6 +17,27 @@ export interface RiskModifier {
   automatable: number;
 }
 
+export interface TransferabilityVector {
+  subject: string;
+  score: number;
+}
+
+export interface PivotOpportunity {
+  role: string;
+  feasibility: number;
+  gapCost: string;
+  time: string;
+}
+
+export interface UpskillingPlanItem {
+  id: string;
+  phase: "30-Day" | "90-Day" | "12-Month";
+  title: string;
+  description: string;
+  type: "new-skilling" | "up-skilling" | "ready-skilling";
+  hours: number;
+}
+
 export interface Assessment {
   id: string;
   userId: string;
@@ -33,6 +54,9 @@ export interface Assessment {
   archetypeConductor: number;
   contextCraftLevel: string;
   resumeUrl: string | null;
+  transferabilityVectors?: TransferabilityVector[];
+  pivotOpportunities?: PivotOpportunity[];
+  upskillingPlans?: UpskillingPlanItem[];
   createdAt: string;
 }
 

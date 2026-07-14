@@ -2,53 +2,20 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Database, Link as LinkIcon, Loader2, Layers, Award, Globe2, Eye, EyeOff, ShieldCheck, ShieldQuestion, X, Sparkles, CheckCircle2, Paperclip, Upload, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { api } from "@/lib/api";
+import { aiService } from "@/services/ai.service";
+import { jnomicsService } from "@/services/jnomics.service";
+import { verificationEvidenceService } from "@/services/verification-evidence.service";
+import { verificationService } from "@/services/verification.service";
+import type { JobRoleGuide } from "@/types/ai";
+import type { JnomicsCard } from "@/types/jnomics";
+import type {
+  VerificationDocument,
+  VerificationDocumentKind,
+  VerificationRow,
+} from "@/types/verification-evidence";
+import type { VerificationPrompt, VerificationQuest } from "@/types/verification";
 import { FEATURES } from "@shared/featureFlags";
 import { FlippableCard } from "@/components/ui/flippable-card";
-
-// ── Primitive Card Verification (Task #55) ──────────────────────────
-interface VerificationRow {
-  cardId: string;
-  score: number;
-  tier: string | null;
-  status: string;
-  attempts: number;
-}
-
-interface VerificationChallenge {
-  id: string;
-  standard: string;
-  standardKey: string;
-  label: string;
-  skills: string[];
-  instruction: string;
-}
-
-interface VerificationQuest {
-  cardId: string;
-  cardName: string;
-  emoji: string;
-  category: string;
-  persona: string;
-  challenges: VerificationChallenge[];
-}
-
-interface VerificationDoc {
-  id: string;
-  cardId: string;
-  kind: "DOCUMENT" | "CERTIFICATION";
-  fileName: string;
-  mimeType: string;
-  label: string | null;
-  dataUrl: string;
-}
-
-interface JobRoleGuide {
-  role: string;
-  onet: { code: string; title: string; note: string }[];
-  sfia: { level: number; name: string; control: string }[];
-  wef: { outlook: "ASCENDING" | "DECLINING" | "STABLE"; summary: string; signals: string[] };
-}
 
 const MAX_DOC_BYTES = 650_000; // keep base64 payload under the 1MB body limit
 const ACCEPTED_DOC_TYPES = "application/pdf,image/png,image/jpeg,image/webp";
@@ -89,28 +56,6 @@ const CATEGORY_BLURB: Record<string, string> = {
   Innovation: "Multiplier primitive — activates when paired with two or more identical cards.",
 };
 
-interface SkillMappings {
-  onet: string[];
-  sfia: string[];
-  wef: string[];
-}
-
-interface JnomicsCard {
-  id: string;
-  name: string;
-  tier: string;          // CODEC category (Animal / Relational / People / ...)
-  type: string;          // Persona label
-  emoji: string;
-  description: string;
-  basePts: number;
-  // Enriched server-side from shared/codec-primitives.ts
-  persona?: string;
-  category?: string;
-  multiplier?: string;
-  insight?: string;
-  mappings?: SkillMappings;
-}
-
 interface JnomicsCardListProps {
   matchedCardIds: string[];
 }
@@ -133,7 +78,7 @@ export function JnomicsCardList({ matchedCardIds }: JnomicsCardListProps) {
     const fetchCards = async () => {
       setIsSyncing(true);
       try {
-        const data = await api.getJnomicsCardsByIds(matchedCardIds);
+        const { data } = await jnomicsService.getByIds(matchedCardIds);
         setCards(data);
       } catch {
         setCards([]);
@@ -151,14 +96,14 @@ export function JnomicsCardList({ matchedCardIds }: JnomicsCardListProps) {
 
   useEffect(() => {
     if (!verificationEnabled) return;
-    api
-      .getVerificationStatus()
-      .then((rows: VerificationRow[]) => {
+    verificationEvidenceService
+      .getStatus()
+      .then(({ data: rows }) => {
         const map: Record<string, VerificationRow> = {};
-        for (const r of rows) map[r.cardId] = r;
+        for (const row of rows) map[row.cardId] = row;
         setVerifications(map);
       })
-      .catch(() => {});
+      .catch(() => setVerifications({}));
   }, [verificationEnabled]);
 
   const handleFlipAll = () => {
@@ -409,8 +354,8 @@ function VerificationModal({
   const [prompts, setPrompts] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ score: number; tier: string | null; jstBoost: number; improved: boolean } | null>(null);
-  const [documents, setDocuments] = useState<VerificationDoc[]>([]);
-  const [docKind, setDocKind] = useState<"DOCUMENT" | "CERTIFICATION">("CERTIFICATION");
+  const [documents, setDocuments] = useState<VerificationDocument[]>([]);
+  const [docKind, setDocKind] = useState<VerificationDocumentKind>("CERTIFICATION");
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [docError, setDocError] = useState<string | null>(null);
   const [jobRole, setJobRole] = useState("");
@@ -424,8 +369,8 @@ function VerificationModal({
     setGuideLoading(true);
     setGuideError(null);
     try {
-      const g = await api.getJobRoleGuide(role);
-      setGuide(g);
+      const { data } = await aiService.getJobRoleGuide(role);
+      setGuide(data);
     } catch (e: any) {
       setGuide(null);
       setGuideError(e?.message ?? "Could not load guidance for that role.");
@@ -437,18 +382,24 @@ function VerificationModal({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    api
-      .getVerificationQuest(cardId)
-      .then((data: { quest: VerificationQuest; documents?: VerificationDoc[] }) => {
-        if (cancelled) return;
-        setQuest(data.quest);
-        setDocuments(data.documents ?? []);
+    verificationService
+      .getQuest(cardId)
+      .then(({ data }) => {
+        if (!cancelled) setQuest(data);
       })
-      .catch((e: any) => {
-        if (!cancelled) setError(e?.message ?? "Could not load this verification quest.");
+      .catch((error: unknown) => {
+        if (!cancelled) setError(error instanceof Error ? error.message : "Could not load this verification quest.");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
+      });
+    verificationEvidenceService
+      .listDocuments(cardId)
+      .then(({ data }) => {
+        if (!cancelled) setDocuments(data);
+      })
+      .catch(() => {
+        if (!cancelled) setDocuments([]);
       });
     return () => {
       cancelled = true;
@@ -465,7 +416,7 @@ function VerificationModal({
     setUploadingDoc(true);
     try {
       const dataUrl = await fileToDataUrl(file);
-      const created = await api.addVerificationDocument(cardId, {
+      const { data: created } = await verificationEvidenceService.addDocument(cardId, {
         kind: docKind,
         fileName: file.name,
         dataUrl,
@@ -480,7 +431,7 @@ function VerificationModal({
 
   const handleDeleteDoc = async (id: string) => {
     try {
-      await api.deleteVerificationDocument(id);
+      await verificationEvidenceService.deleteDocument(id);
       setDocuments(docs => docs.filter(d => d.id !== id));
     } catch (e: any) {
       setDocError(e?.message ?? "Could not remove document.");
@@ -489,7 +440,7 @@ function VerificationModal({
 
   const challenges = quest?.challenges ?? [];
   const allAnswered =
-    challenges.length > 0 && challenges.every(c => (prompts[c.id]?.trim().length ?? 0) >= 10);
+    challenges.length > 0 && challenges.every((challenge) => (prompts[challenge.standard]?.trim().length ?? 0) >= 10);
   const dataPillarSatisfied = documents.length > 0;
 
   const handleSubmit = async () => {
@@ -497,15 +448,24 @@ function VerificationModal({
     setSubmitting(true);
     setError(null);
     try {
-      const submissions = challenges.map(c => ({ challengeId: c.id, prompt: prompts[c.id].trim() }));
-      const res = await api.submitVerification(cardId, submissions);
-      setResult({ score: res.score, tier: res.tier, jstBoost: res.jstBoost, improved: res.improved });
+      const submissions: VerificationPrompt[] = challenges.map((challenge) => ({
+        standard: challenge.standard,
+        prompt: prompts[challenge.standard].trim(),
+        dataPillarSatisfied,
+      }));
+      const { data: result } = await verificationService.submit(cardId, submissions);
+      setResult({
+        score: result.score,
+        tier: result.tier,
+        jstBoost: result.appliedDelta,
+        improved: result.improved,
+      });
       onVerified({
         cardId,
-        score: res.verification.score,
-        tier: res.verification.tier,
-        status: res.verification.status,
-        attempts: res.verification.attempts,
+        score: result.score,
+        tier: result.tier,
+        status: result.tier ? "VERIFIED" : "UNVERIFIED",
+        attempts: (existing?.attempts ?? 0) + 1,
       });
     } catch (e: any) {
       setError(e?.message ?? "Submission failed.");
@@ -643,11 +603,9 @@ function VerificationModal({
                       <span className="text-[10px] font-mono uppercase tracking-wider text-blue-300">O*NET occupations</span>
                       {guide.onet.length > 0 ? (
                         <ul className="mt-1 flex flex-col gap-1">
-                          {guide.onet.map((o, i) => (
-                            <li key={i} className="text-[11px] font-sans text-white/80 leading-snug">
-                              <span className="font-mono text-white/90">{o.title}</span>
-                              {o.code && <span className="font-mono text-white/40"> · {o.code}</span>}
-                              {o.note && <span className="text-white/50"> — {o.note}</span>}
+                          {guide.onet.map((occupation) => (
+                            <li key={occupation} className="text-[11px] font-sans text-white/80 leading-snug">
+                              {occupation}
                             </li>
                           ))}
                         </ul>
@@ -658,10 +616,9 @@ function VerificationModal({
                       <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-300">SFIA level of control</span>
                       {guide.sfia.length > 0 ? (
                         <ul className="mt-1 flex flex-col gap-1">
-                          {guide.sfia.map((s, i) => (
-                            <li key={i} className="text-[11px] font-sans text-white/80 leading-snug">
-                              <span className="font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">L{s.level} {s.name}</span>
-                              <span className="text-white/60"> — {s.control}</span>
+                          {guide.sfia.map((level) => (
+                            <li key={level} className="text-[11px] font-sans text-white/80 leading-snug">
+                              <span className="font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">{level}</span>
                             </li>
                           ))}
                         </ul>
@@ -734,7 +691,7 @@ function VerificationModal({
                 <div className="flex flex-wrap items-center gap-2">
                   <select
                     value={docKind}
-                    onChange={e => setDocKind(e.target.value as "DOCUMENT" | "CERTIFICATION")}
+                    onChange={e => setDocKind(e.target.value as VerificationDocumentKind)}
                     data-testid="select-doc-kind"
                     className="rounded bg-background/60 border border-white/10 focus:border-primary/50 focus:outline-none px-2 py-1.5 text-[11px] font-mono text-white/90"
                   >
@@ -764,24 +721,24 @@ function VerificationModal({
                 {docError && <p className="text-[11px] text-destructive" data-testid="text-doc-error">{docError}</p>}
               </div>
 
-              {challenges.map(ch => (
-                <div key={ch.id} className="flex flex-col gap-2" data-testid={`challenge-${ch.id}`}>
+              {challenges.map((challenge) => (
+                <div key={challenge.standard} className="flex flex-col gap-2" data-testid={`challenge-${challenge.standard}`}>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono uppercase tracking-widest text-primary">{ch.standard}</span>
-                    <span className="text-[11px] font-mono text-muted-foreground">{ch.label}</span>
+                    <span className="text-[11px] font-mono uppercase tracking-widest text-primary">{challenge.standard}</span>
+                    <span className="text-[11px] font-mono text-muted-foreground">{challenge.instructions}</span>
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {ch.skills.map(s => (
-                      <span key={s} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-white/70 border border-white/10">{s}</span>
+                    {challenge.skills.map((skill) => (
+                      <span key={skill} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-white/70 border border-white/10">{skill}</span>
                     ))}
                   </div>
                   <textarea
-                    value={prompts[ch.id] ?? ""}
-                    onChange={e => setPrompts(p => ({ ...p, [ch.id]: e.target.value }))}
+                    value={prompts[challenge.standard] ?? ""}
+                    onChange={(event) => setPrompts((current) => ({ ...current, [challenge.standard]: event.target.value }))}
                     rows={5}
                     maxLength={4000}
                     placeholder="Write your Context-Craft prompt here…"
-                    data-testid={`input-prompt-${ch.id}`}
+                    data-testid={`input-prompt-${challenge.standard}`}
                     className="w-full rounded-md bg-background/60 border border-white/10 focus:border-primary/50 focus:outline-none p-3 text-sm font-mono text-white/90 resize-y"
                   />
                 </div>

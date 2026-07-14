@@ -370,7 +370,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </header>
 
       {/* Desktop sidebar (>= md) */}
-      <aside className="hidden sm:flex sm:w-56 md:w-64 lg:w-72 glass border-r border-primary/20 shrink-0 z-10 sticky top-0 h-screen">
+      <aside className="hidden sm:flex sm:w-56 glass border-r border-primary/20 shrink-0 z-10 sticky top-0 h-screen">
         <SidebarBody location={pathname} openTour={open} onLogout={handleLogout} />
       </aside>
 

@@ -4,7 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/useAuth";
-import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/apiError";
+import { billingService } from "@/services/billing.service";
+import { f1000Service } from "@/services/f1000.service";
+import type { F1000Membership } from "@/types/f1000";
 import { SUBSCRIPTION_PLANS, F1000_PROMO, type SubscriptionPlan } from "@shared/schema";
 import {
   Crown,
@@ -39,11 +42,19 @@ export default function SubscriptionPage() {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [institution, setInstitution] = useState("");
 
-  const f1000Query = useQuery<{ member: boolean }>({
-    queryKey: ["/api/f1000/me"],
-    queryFn: () => api.getF1000Me(),
+  const f1000Query = useQuery<F1000Membership | null>({
+    queryKey: ["/v1/f1000/me"],
+    queryFn: async () => {
+      try {
+        const response = await f1000Service.getMe();
+        return response.data;
+      } catch {
+        return null;
+      }
+    },
     enabled: FEATURES.f1000Promo && !!user,
     refetchOnWindowFocus: false,
+    retry: false,
   });
   const isF1000 = !!f1000Query.data?.member;
   const promoPriceFor = (key: SubscriptionPlan): number | null =>
@@ -71,22 +82,25 @@ export default function SubscriptionPage() {
     }
     setIsUpdating(true);
     try {
-      const session = await api.startCheckout(
+      const response = await billingService.startCheckout({
         plan,
-        plan === "SCHOOL_STUDENT" ? institution : undefined,
-      );
+        ...(plan === "SCHOOL_STUDENT" ? { institution } : {}),
+      });
+      const session = response.data;
       if (!session.requiresPayment) {
-        await api.completeCheckout(session.sessionId, true);
+        await billingService.completeCheckout(session.sessionId, true);
         setCurrentPlan(plan);
         updateUser({ subscriptionPlan: plan, subscriptionStatus: "active" });
         setShowSuccess(true);
         setSelectedPlan(null);
         setTimeout(() => setShowSuccess(false), 3000);
-      } else {
+      } else if (session.redirectUrl) {
         navigate(session.redirectUrl);
+      } else {
+        setErrorMsg("Checkout couldn't be opened. Please try again.");
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || "Failed to start checkout.");
+    } catch (err: unknown) {
+      setErrorMsg(getApiErrorMessage(err, "Couldn't start checkout. Please try again."));
     } finally {
       setIsUpdating(false);
     }
@@ -98,13 +112,13 @@ export default function SubscriptionPage() {
     setIsUpdating(true);
     setErrorMsg(null);
     try {
-      const r = await api.cancelSubscription();
+      const response = await billingService.cancelSubscription();
       updateUser({ subscriptionStatus: "canceling" });
       setShowSuccess(true);
-      setErrorMsg(`Subscription will end on ${new Date(r.effectiveAt).toLocaleDateString()}.`);
+      setErrorMsg(`Subscription will end on ${new Date(response.data.effectiveAt).toLocaleDateString()}.`);
       setTimeout(() => setShowSuccess(false), 3000);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Cancel failed.");
+    } catch (err: unknown) {
+      setErrorMsg(getApiErrorMessage(err, "Couldn't cancel the subscription. Please try again."));
     } finally {
       setIsUpdating(false);
     }
@@ -133,7 +147,7 @@ export default function SubscriptionPage() {
             className="glass-card p-4 rounded-xl border border-secondary/30 bg-secondary/5 flex items-center gap-3"
             data-testid="alert-subscription-updated"
           >
-            <CheckCircle2 className="h-5 w-5 text-secondary flex-shrink-0" />
+            <CheckCircle2 className="h-5 w-5 text-secondary shrink-0" />
             <span className="font-mono text-sm text-secondary">
               Subscription updated successfully. Your new plan features are now active.
             </span>
@@ -197,7 +211,7 @@ export default function SubscriptionPage() {
             className="glass-card p-4 rounded-xl border border-destructive/30 bg-destructive/5 flex items-center gap-3"
             data-testid="alert-billing-error"
           >
-            <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0" />
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
             <span className="font-mono text-sm text-destructive">{errorMsg}</span>
           </motion.div>
         )}
@@ -289,7 +303,7 @@ export default function SubscriptionPage() {
                 <div className="space-y-2.5 mb-6 flex-1">
                   {planData.features.map((feature, i) => (
                     <div key={i} className="flex items-start gap-2">
-                      <Check className="h-4 w-4 flex-shrink-0 mt-0.5" style={{ color: planData.color }} />
+                      <Check className="h-4 w-4 shrink-0 mt-0.5" style={{ color: planData.color }} />
                       <span className="text-sm text-muted-foreground">{feature}</span>
                     </div>
                   ))}

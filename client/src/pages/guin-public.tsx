@@ -22,70 +22,12 @@ import {
   AlertTriangle,
   Trophy,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/apiError";
 import { useAuth } from "@/lib/useAuth";
+import { ccgeService } from "@/services/ccge.service";
+import { guinService } from "@/services/guin.service";
+import type { GuinProfile } from "@/types/guin";
 import { CONTEXT_CRAFT_LEVELS, CERT_LEVEL_RANK, ENDORSEMENT_MAX_LEN, type ContextCraftLevel } from "@shared/schema";
-
-type GuinProfile = {
-  user: {
-    id: string;
-    username: string;
-    name: string;
-    role: string | null;
-    department: string | null;
-    seniority: string | null;
-    location: string | null;
-    contextCraftCertLevel: string | null;
-    institution: string | null;
-  };
-  knight: {
-    current: { key: string; label: string; min: number; color: string; icon: string };
-    next: { key: string; label: string; min: number; color: string; icon: string } | null;
-    progress: number;
-    totalKcseEarned: number;
-  };
-  stats: {
-    totalKcseEarned: number;
-    sessionsFinished: number;
-    sessionsWon: number;
-    ownedCardsCount: number;
-    publishedSpcsCount: number;
-    endorsementsCount: number;
-  };
-  kcseRadar: { axis: string; value: number }[];
-  ownedCards: {
-    id: string;
-    name: string;
-    pillar: string;
-    type: string;
-    emoji: string;
-    baseKcse: number;
-    description: string;
-  }[];
-  publishedSpcs: {
-    id: string;
-    title: string;
-    pillar: string;
-    priceCredits: number;
-    kcseScore: number;
-    hiveScore: number;
-    salesCount: number;
-  }[];
-  endorsements: {
-    id: string;
-    message: string;
-    createdAt: string;
-    sessionId: string;
-    endorser: { id: string; name: string; username: string; contextCraftCertLevel: string | null } | null;
-  }[];
-  recentSessions: {
-    id: string;
-    scenarioId: string;
-    kcseScore: number | null;
-    certTierEarned: string | null;
-    finishedAt: string | null;
-  }[];
-};
 
 export function GuinProfileView({ profile, viewerCanEndorse, onEndorse }: {
   profile: GuinProfile;
@@ -307,7 +249,7 @@ function EndorsementsBlock({
 }) {
   const { user: viewer } = useAuth();
   const [open, setOpen] = useState(false);
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<Array<{ id: string; scenarioId: string; status: string; kcseScore: number | null }>>([]);
   const [sessionId, setSessionId] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -316,9 +258,9 @@ function EndorsementsBlock({
 
   useEffect(() => {
     if (open && viewer) {
-      api
-        .getCcgeUserSessions(viewer.id)
-        .then((rows) => setSessions(rows.filter((s: any) => s.status === "finished" && s.kcseScore != null)))
+      ccgeService
+        .getUserSessions(viewer.id)
+        .then(({ data }) => setSessions(data.data.filter((session) => session.status === "finished" && session.kcseScore !== null)))
         .catch(() => setSessions([]));
     }
   }, [open, viewer]);
@@ -328,7 +270,7 @@ function EndorsementsBlock({
     setSubmitting(true);
     setError(null);
     try {
-      await api.createEndorsement({
+      await guinService.createEndorsement({
         recipientId: profile.user.id,
         sessionId,
         message,
@@ -339,8 +281,8 @@ function EndorsementsBlock({
       setSessionId("");
       onEndorse?.();
       setTimeout(() => setSuccess(false), 2500);
-    } catch (e: any) {
-      setError(e?.message || "Failed to post endorsement.");
+    } catch (error: unknown) {
+      setError(getApiErrorMessage(error, "Couldn't post the endorsement. Check your connection and try again."));
     } finally {
       setSubmitting(false);
     }
@@ -389,7 +331,7 @@ function EndorsementsBlock({
               <option value="">— select session —</option>
               {sessions.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.scenarioId} · KCSE {s.kcseScore?.toFixed(1)} {s.certTierEarned ? `(${s.certTierEarned})` : ""}
+                  {s.scenarioId} · KCSE {s.kcseScore?.toFixed(1)}
                 </option>
               ))}
             </select>
@@ -496,10 +438,10 @@ export default function GuinPublicPage() {
   const load = () => {
     if (!username) return;
     setError(null);
-    api
-      .getGuinByUsername(username)
-      .then(setProfile)
-      .catch((e) => setError(e?.message || "Profile not found."));
+    guinService
+      .getByUsername(username)
+      .then(({ data }) => setProfile(data))
+      .catch((error: unknown) => setError(getApiErrorMessage(error, "Profile not found.")));
   };
 
   useEffect(() => {

@@ -2,8 +2,14 @@ import { useEffect, useState } from "react";
 import { FEATURES } from "@shared/featureFlags";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/useAuth";
-import { api } from "@/lib/api";
-import { SUBSCRIPTION_PLANS, CONTEXT_CRAFT_LEVELS, formatPriceUsd as formatPriceDual, type SubscriptionPlan, type ContextCraftLevel, type UserCredits } from "@shared/schema";
+import { getApiErrorMessage } from "@/lib/apiError";
+import { aiService } from "@/services/ai.service";
+import { guinService } from "@/services/guin.service";
+import { profileService } from "@/services/profile.service";
+import { resumeService } from "@/services/resume.service";
+import type { GuinProfile } from "@/types/guin";
+import type { ProfileCredits, SpcSalesSummary } from "@/types/profile";
+import { SUBSCRIPTION_PLANS, CONTEXT_CRAFT_LEVELS, formatPriceUsd as formatPriceDual, type SubscriptionPlan, type ContextCraftLevel } from "@shared/schema";
 import { GuinProfileView } from "./guin-public";
 import {
   User,
@@ -62,9 +68,9 @@ export default function ProfilePage() {
   const cert = CONTEXT_CRAFT_LEVELS[(user.contextCraftCertLevel || "NONE") as ContextCraftLevel];
 
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [credits, setCredits] = useState<UserCredits | null>(null);
-  const [sales, setSales] = useState<{ totalEarned: number; salesCount: number } | null>(null);
-  const [guin, setGuin] = useState<any>(null);
+  const [credits, setCredits] = useState<ProfileCredits | null>(null);
+  const [sales, setSales] = useState<SpcSalesSummary | null>(null);
+  const [guin, setGuin] = useState<GuinProfile | null>(null);
   // Junglenomics Card Portfolio — pulled from the user's latest assessment.
   // matchedCardIds is populated server-side by resumeAnalyzer.pickMatchedCards
   // off the user's CV/skills, so any user with an assessment has a portfolio.
@@ -76,25 +82,41 @@ export default function ProfilePage() {
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiSaved, setAiSaved] = useState(false);
 
-  const loadGuin = () => {
-    api.getGuinById(user.id).then(setGuin).catch(() => setGuin(null));
+  const loadGuin = async () => {
+    try {
+      const { data } = await guinService.getByUserId(user.id);
+      setGuin(data);
+    } catch {
+      setGuin(null);
+    }
   };
 
   useEffect(() => {
-    api.getCredits(user.id).then(setCredits).catch(() => null);
-    api.getSpcSales(user.id).then(setSales).catch(() => null);
-    api
-      .getLatestAssessment(user.id)
-      .then((a: any) => setMatchedCardIds(Array.isArray(a?.matchedCardIds) ? a.matchedCardIds : []))
-      .catch(() => setMatchedCardIds([]));
-    loadGuin();
-    api
-      .getAiModels()
-      .then((d: { models: AiModelInfo[]; preferred: string | null }) => {
-        setAiModels(d.models);
-        setAiPreferred(d.preferred);
+    let cancelled = false;
+    profileService.getCredits(user.id)
+      .then(({ data }) => { if (!cancelled) setCredits(data); })
+      .catch(() => { if (!cancelled) setCredits(null); });
+    profileService.getSpcSales(user.id)
+      .then(({ data }) => { if (!cancelled) setSales(data); })
+      .catch(() => { if (!cancelled) setSales(null); });
+    resumeService.getLatest(user.id)
+      .then(({ data }) => { if (!cancelled) setMatchedCardIds(data.matchedCardIds ?? []); })
+      .catch(() => { if (!cancelled) setMatchedCardIds([]); });
+    void loadGuin();
+    aiService.getModels()
+      .then(({ data }) => {
+        if (cancelled) return;
+        setAiModels(data.models.map((model) => ({
+          ...model,
+          label: model.id,
+          blurb: "",
+          costTier: model.costTier === "economy" ? "economy" : "premium",
+          allowedForPlan: true,
+        })));
+        setAiPreferred(data.preferred);
       })
-      .catch(() => setAiModels([]));
+      .catch(() => { if (!cancelled) setAiModels([]); });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id]);
 
@@ -105,12 +127,12 @@ export default function ProfilePage() {
     const prev = aiPreferred;
     setAiPreferred(model);
     try {
-      await api.setAiModelPreference(model);
+      await aiService.setModelPreference(model);
       setAiSaved(true);
       setTimeout(() => setAiSaved(false), 2500);
-    } catch (err: any) {
+    } catch (error: unknown) {
       setAiPreferred(prev);
-      setAiError(err?.message || "Failed to save AI model preference.");
+      setAiError(getApiErrorMessage(error, "Couldn't save the AI model preference."));
     } finally {
       setAiSaving(false);
     }
@@ -119,13 +141,13 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setSaveError(null);
     try {
-      await api.updateProfile(user.id, form);
+      await profileService.update(user.id, form);
       updateUser(form as Parameters<typeof updateUser>[0]);
       setSaved(true);
       setEditing(false);
       setTimeout(() => setSaved(false), 2500);
-    } catch (err: any) {
-      setSaveError(err?.message || "Failed to save profile. Please try again.");
+    } catch (error: unknown) {
+      setSaveError(getApiErrorMessage(error, "Couldn't save the profile. Check your connection and try again."));
     }
   };
 
@@ -172,7 +194,7 @@ export default function ProfilePage() {
           animate={{ opacity: 1, y: 0 }}
           className="glass-card p-4 rounded-xl border border-secondary/30 bg-secondary/5 flex items-center gap-3"
         >
-          <CheckCircle2 className="h-5 w-5 text-secondary flex-shrink-0" />
+          <CheckCircle2 className="h-5 w-5 text-secondary shrink-0" />
           <span className="font-mono text-sm text-secondary">Profile updated successfully.</span>
         </motion.div>
       )}
@@ -200,7 +222,7 @@ export default function ProfilePage() {
             <div className="space-y-4">
               {fields.map(({ key, label, icon: Icon, value }) => (
                 <div key={key} className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                     <Icon className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div className="flex-1">
@@ -223,7 +245,7 @@ export default function ProfilePage() {
               ))}
 
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                   <Mail className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1">
@@ -420,32 +442,28 @@ function DataPrivacySection() {
   const handleExport = async () => {
     setBusy("export"); setError(null);
     try {
-      const res = await fetch("/api/users/me/export", { credentials: "include" });
-      if (!res.ok) throw new Error((await res.json()).message || "Export failed");
-      const blob = await res.blob();
+      const { data: blob } = await profileService.exportData();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `ark-export-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
-    } catch (e: any) { setError(e.message); }
-    finally { setBusy(null); }
+    } catch (error: unknown) {
+      setError(getApiErrorMessage(error, "Couldn't export your data. Check your connection and try again."));
+    } finally { setBusy(null); }
   };
 
   const handleDelete = async () => {
-    if (confirmText !== "DELETE") { setError('Type DELETE to confirm.'); return; }
+    if (confirmText !== "DELETE") { setError("Type DELETE to confirm."); return; }
     setBusy("delete"); setError(null);
     try {
-      const res = await fetch("/api/users/me", {
-        method: "DELETE",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirm: "DELETE" }),
-      });
-      if (!res.ok) throw new Error((await res.json()).message || "Delete failed");
+      await profileService.deleteAccount({ confirm: "DELETE" });
       window.location.assign("/login");
-    } catch (e: any) { setError(e.message); setBusy(null); }
+    } catch (error: unknown) {
+      setError(getApiErrorMessage(error, "Couldn't delete your account. Check your connection and try again."));
+      setBusy(null);
+    }
   };
 
   return (

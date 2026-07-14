@@ -4,6 +4,10 @@ export interface F1000Stats {
   remaining: number;
 }
 
+export interface F1000Membership {
+  member: boolean;
+}
+
 export interface F1000ClaimBody {
   code: string;
 }
