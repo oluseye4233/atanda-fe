@@ -59,15 +59,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // best-effort — clear local state regardless
     }
     qc.setQueryData(ME_KEY, null);
-    qc.clear();
+    qc.removeQueries({ predicate: (q) => q.queryKey[0] !== ME_KEY[0] });
   }, [qc]);
 
   // Listen for the 401-interceptor event so the context clears even when
-  // the failed request wasn't initiated through a React hook.
+  // the failed request wasn't initiated through a React hook. Only the
+  // cached user is cleared here — NOT the whole query client. Clearing
+  // everything would force every mounted query (including this provider's
+  // own `whoami` query) to refetch immediately, and since the session is
+  // genuinely dead that refetch just 401s again, creating an infinite loop.
   useEffect(() => {
     const handler = () => {
       qc.setQueryData(ME_KEY, null);
-      qc.clear();
     };
     window.addEventListener("ark:session-expired", handler);
     return () => window.removeEventListener("ark:session-expired", handler);
