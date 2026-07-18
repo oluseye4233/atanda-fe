@@ -342,7 +342,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col sm:flex-row bg-background">
+    <div className="h-screen flex flex-col sm:flex-row bg-background overflow-hidden">
       {/* Mobile top bar (< md): hamburger drawer */}
       <header className="sm:hidden sticky top-0 z-30 flex items-center justify-between pb-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-[calc(0.75rem+env(safe-area-inset-top))] border-b border-primary/20 bg-background/90 backdrop-blur-md">
         <Link to="/dashboard" data-testid="link-logo-home-mobile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -375,7 +375,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 relative overflow-x-hidden">
+      <main className="flex-1 flex flex-col relative overflow-y-auto overflow-x-hidden min-h-0">
         <AiBudgetBanner />
         {user?.isVerified === false && <EmailVerificationBanner email={user.email} />}
         {/* Desktop floating bell (>= sm) — sits in the top-right of the main column. */}
@@ -388,10 +388,10 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-destructive/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/3 pointer-events-none" />
 
-        <div className="relative z-10 p-4 sm:p-6 md:p-10 h-full">
+        <div className="relative z-10 p-4 sm:p-6 md:p-10 flex-1">
           {children}
         </div>
-        <footer className="relative z-10 border-t border-primary/10 px-4 sm:px-6 md:px-10 py-4 mt-auto">
+        <footer className="relative z-10 border-t border-primary/10 px-4 sm:px-6 md:px-10 py-4 mt-auto shrink-0">
           <div className="flex flex-wrap items-center justify-between gap-3 text-[11px] font-mono uppercase tracking-widest text-muted-foreground/70">
             <span>© 2026 ARK Platform</span>
             <div className="flex items-center gap-4">

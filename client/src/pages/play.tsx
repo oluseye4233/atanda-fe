@@ -220,7 +220,7 @@ export default function PlayPage() {
               {tier ? (
                 <div>
                   <p className="text-xs uppercase tracking-widest text-muted-foreground font-mono">Tier Earned</p>
-                  <div className={cn("inline-block px-4 py-2 rounded-md font-display text-2xl font-bold bg-gradient-to-br", TIER_COLORS[tier], "text-background")} data-testid="text-tier-earned">
+                  <div className={cn("inline-block px-4 py-2 rounded-md font-display text-2xl font-bold bg-linear-to-br", TIER_COLORS[tier], "text-background")} data-testid="text-tier-earned">
                     {tier}
                   </div>
                 </div>
@@ -309,7 +309,7 @@ export default function PlayPage() {
                 </div>
                 <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-2">
                   <div
-                    className="h-full bg-gradient-to-r from-primary to-secondary"
+                    className="h-full bg-linear-to-r from-primary to-secondary"
                     style={{ width: `${(m.value / 50) * 100}%` }}
                   />
                 </div>
@@ -515,7 +515,7 @@ export default function PlayPage() {
           <div className="flex justify-between items-start gap-4 flex-wrap">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
-                <Badge className={cn("font-display", `bg-gradient-to-br ${TIER_COLORS[activeScenario.tier]} text-background`)}>
+                <Badge className={cn("font-display", `bg-linear-to-br ${TIER_COLORS[activeScenario.tier]} text-background`)}>
                   {activeScenario.tier}
                 </Badge>
                 <span className="text-xs font-mono text-muted-foreground">
@@ -688,7 +688,7 @@ export default function PlayPage() {
               front={
                 <div className="p-5 h-full flex flex-col" data-testid={`scenario-card-${s.id}`}>
                   <div className="flex items-center justify-between mb-2 pr-9">
-                    <Badge className={cn("font-display", `bg-gradient-to-br ${TIER_COLORS[s.tier]} text-background`)}>
+                    <Badge className={cn("font-display", `bg-linear-to-br ${TIER_COLORS[s.tier]} text-background`)}>
                       {s.tier}
                     </Badge>
                     <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
@@ -728,7 +728,7 @@ export default function PlayPage() {
                     </div>
                     {s.targetPillars.map((p) => (
                       <div key={p} className="flex items-start gap-2 text-xs">
-                        <Badge variant="outline" className={cn("font-mono text-[9px] flex-shrink-0", PILLAR_COLORS[p])}>
+                        <Badge variant="outline" className={cn("font-mono text-[9px] shrink-0", PILLAR_COLORS[p])}>
                           {p}
                         </Badge>
                         <span className="text-white/70 leading-snug">

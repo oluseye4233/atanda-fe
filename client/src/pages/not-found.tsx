@@ -3,7 +3,7 @@ import { AlertCircle, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-background px-4" data-testid="page-not-found">
+    <div className="w-full flex items-center justify-center min-h-[60vh] px-4" data-testid="page-not-found">
       <div className="max-w-md w-full text-center space-y-6">
         <div className="w-20 h-20 mx-auto rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
           <AlertCircle className="h-10 w-10 text-destructive/70" />

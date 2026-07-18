@@ -27,4 +27,8 @@ export const plansService = {
   /** DELETE /v1/plans/:id — admin/staff */
   remove: (id: string) =>
     apiClient.delete<{ message: string }>(`/plans/${id}`),
+
+  /** GET /v1/plans/public — public endpoint for landing page pricing */
+  getPublic: () =>
+    apiClient.get<Plan[]>("/plans/public"),
 };
