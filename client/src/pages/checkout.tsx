@@ -1,18 +1,19 @@
-import { useState } from "react";
-import { useMatch, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useMatch, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/useAuth";
 import { getApiErrorMessage } from "@/lib/apiError";
 import { billingService, type CheckoutSession } from "@/services/billing.service";
 import { SUBSCRIPTION_PLANS } from "@shared/schema";
-import { CreditCard, Lock, X, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { CreditCard, Lock, X, CheckCircle2, AlertTriangle, Loader2, ArrowRight } from "lucide-react";
 
 type Step = "loading" | "form" | "processing" | "complete" | "failed" | "error";
 
 export default function CheckoutPage() {
   const match = useMatch("/checkout/:id");
   const params = match?.params as { id: string } | undefined;
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { updateUser } = useAuth();
   const [step, setStep] = useState<Step>("form");
@@ -20,11 +21,14 @@ export default function CheckoutPage() {
   const [cardNum, setCardNum] = useState("4242 4242 4242 4242");
   const [expiry, setExpiry] = useState("12/28");
   const [cvc, setCvc] = useState("123");
+
+  const sessionIdFromUrl = searchParams.get("session_id");
+  const isReturnFromStripe = !!sessionIdFromUrl;
+
   const checkoutQuery = useQuery({
     queryKey: ["/v1/billing/checkout", params?.id],
     queryFn: async (): Promise<CheckoutSession | null> => {
       if (!params?.id) return null;
-
       try {
         const response = await billingService.getCheckoutSession(params.id);
         return response.data;
@@ -32,19 +36,23 @@ export default function CheckoutPage() {
         return null;
       }
     },
-    enabled: !!params?.id,
+    enabled: !!params?.id && !isReturnFromStripe,
     retry: false,
   });
+
   const session = checkoutQuery.data ?? null;
-  const initialStep: Step = checkoutQuery.isPending
-    ? "loading"
-    : !session
-      ? "error"
-      : session.status === "completed"
-        ? "complete"
-        : session.status === "failed" || session.status === "canceled"
-          ? "failed"
-          : "form";
+  const initialStep: Step = isReturnFromStripe
+    ? "processing"
+    : checkoutQuery.isPending
+      ? "loading"
+      : !session
+        ? "error"
+        : session.status === "completed"
+          ? "complete"
+          : session.status === "failed" || session.status === "canceled"
+            ? "failed"
+            : "form";
+
   const displayStep = step === "form" ? initialStep : step;
   const checkoutError = checkoutQuery.isPending || session
     ? errorMsg
@@ -59,6 +67,7 @@ export default function CheckoutPage() {
     try {
       const response = await billingService.completeCheckout(session.id, success);
       if (response.data.ok) {
+        await billingService.completeCheckout(session.id, true);
         updateUser({
           subscriptionPlan: session.plan,
           subscriptionStatus: "active",
@@ -79,6 +88,33 @@ export default function CheckoutPage() {
       }
     }
   };
+
+  useEffect(() => {
+    if (isReturnFromStripe && sessionIdFromUrl) {
+      const completeCheckout = async () => {
+        setStep("processing");
+        try {
+          const response = await billingService.completeCheckout(sessionIdFromUrl, true);
+          if (response.data.ok) {
+            const sessionResponse = await billingService.getCheckoutSession(sessionIdFromUrl);
+            const sessionData = sessionResponse.data;
+            updateUser({
+              subscriptionPlan: sessionData.plan,
+              subscriptionStatus: "active",
+              ...(sessionData.institution ? { institution: sessionData.institution } : {}),
+            });
+            setStep("complete");
+            setTimeout(() => navigate("/subscription"), 1600);
+          } else {
+            setStep("failed");
+          }
+        } catch {
+          setStep("failed");
+        }
+      };
+      completeCheckout();
+    }
+  }, [isReturnFromStripe, sessionIdFromUrl, navigate, updateUser]);
 
   const planData = session ? SUBSCRIPTION_PLANS[session.plan] : null;
   const dollars = session ? (session.amountCents / 100).toFixed(2) : "0.00";
@@ -177,7 +213,13 @@ export default function CheckoutPage() {
 
             <div className="space-y-2">
               <button
-                onClick={() => submit(true)}
+                onClick={() => {
+                  if (session.redirectUrl) {
+                    window.location.href = session.redirectUrl;
+                  } else {
+                    submit(true);
+                  }
+                }}
                 className="w-full py-4 rounded-xl font-mono text-sm uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
                 data-testid="button-pay"
               >

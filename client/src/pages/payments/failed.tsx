@@ -1,8 +1,20 @@
+import { useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AlertTriangle, ArrowRight, RefreshCw, Sparkles, CreditCard, Banknote, Shield } from "lucide-react";
 
 export default function PaymentFailedPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get("session_id");
+
+  useEffect(() => {
+    if (sessionId) {
+      navigate("/");
+    }
+  }, [sessionId, navigate]);
+
   return (
     <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-6 py-24" data-testid="page-payment-failed">
       <motion.div
@@ -45,6 +57,29 @@ export default function PaymentFailedPage() {
           >
             Back to Home
           </Link>
+        </div>
+
+        <div className="mt-10 pt-8 border-t border-white/10">
+          <p className="text-[11px] font-mono text-muted-foreground/60 uppercase tracking-widest mb-4">
+            Common fixes
+          </p>
+          <div className="grid grid-cols-3 gap-4 text-left">
+            <div className="bg-white/3 p-4 rounded-xl border border-white/5">
+              <CreditCard className="h-5 w-5 text-primary mb-2" />
+              <p className="font-mono text-xs text-white">Check Card</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Verify number & expiry</p>
+            </div>
+            <div className="bg-white/3 p-4 rounded-xl border border-white/5">
+              <Banknote className="h-5 w-5 text-secondary mb-2" />
+              <p className="font-mono text-xs text-white">Funds</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Ensure sufficient balance</p>
+            </div>
+            <div className="bg-white/3 p-4 rounded-xl border border-white/5">
+              <Shield className="h-5 w-5 text-destructive/80 mb-2" />
+              <p className="font-mono text-xs text-white">Contact Bank</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Allow international/online</p>
+            </div>
+          </div>
         </div>
       </motion.div>
     </div>

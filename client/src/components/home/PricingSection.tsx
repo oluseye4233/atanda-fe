@@ -1,7 +1,10 @@
+import { useAuth } from "@/lib/useAuth";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Check, Crown, GraduationCap, User, Building2, Sparkles, Zap } from "lucide-react";
 import { plansService } from "@/services/plans.service";
+import { billingService } from "@/services/billing.service";
 import type { Plan } from "@/types/plans";
 
 const PLAN_ICONS: Record<string, typeof User> = {
@@ -12,7 +15,6 @@ const PLAN_ICONS: Record<string, typeof User> = {
   ENTERPRISE: Building2,
 };
 
-// Order: Free (left) -> Explorer -> Pro -> Schools -> Institution (right)
 const PLAN_ORDER = [
   "INDIVIDUAL_FREE",
   "INDIVIDUAL_EXPLORER",
@@ -21,20 +23,29 @@ const PLAN_ORDER = [
   "ENTERPRISE",
 ];
 
-function PricingCard({ plan, index }: { plan: Plan; index: number }) {
-  const Icon = PLAN_ICONS[plan.title.toUpperCase().replace(/\s+/g, "_")] || User;
+function mapPlanToKey(title: string): string {
+  const t = title.toUpperCase().replace(/\s+/g, "_");
+  if (t.includes("EXPLORER")) return "INDIVIDUAL_EXPLORER";
+  if (t.includes("PRO")) return "INDIVIDUAL_PRO";
+  if (t.includes("ARCHITECT")) return "INDIVIDUAL_PRO";
+  if (t.includes("SCHOOL") || t.includes("STUDENT")) return "SCHOOL_STUDENT";
+  if (t.includes("INSTITUTION") || t.includes("ENTERPRISE")) return "ENTERPRISE";
+  return "INDIVIDUAL_FREE";
+}
+
+function PricingCard({ plan, index, onSubscribe }: { plan: Plan; index: number; onSubscribe: (planKey: string) => void }) {
+  const Icon = PLAN_ICONS[mapPlanToKey(plan.title)] || User;
   const isPopular = plan.title === "Pro";
   const isEnterprise = plan.title === "Institution";
   const isFree = plan.monthlyPrice === "0.00";
+  const planKey = mapPlanToKey(plan.title);
 
-  // Bento grid: 3 cards top row, 2 cards bottom row
-  // On xl: 3 columns, so indices 0,1,2 = top row, 3,4 = bottom row
   const cardStyles = [
-    "xl:col-span-1", // Free
-    "xl:col-span-1", // Explorer
-    "xl:col-span-1", // Pro
-    "xl:col-span-1", // Schools
-    "xl:col-span-1", // Institution
+    "xl:col-span-1",
+    "xl:col-span-1",
+    "xl:col-span-1",
+    "xl:col-span-1",
+    "xl:col-span-1",
   ];
 
   return (
@@ -99,7 +110,6 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
           {plan.description}
         </p>
 
-        {/* Show only top 4 features, rest in comparison table */}
         <div className="space-y-2.5 mb-6">
           {plan.features.slice(0, 4).map((feature, i) => (
             <div key={i} className="flex items-start gap-2">
@@ -110,8 +120,8 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
         </div>
 
         {!isEnterprise && (
-          <a
-            href={isFree ? "/signup" : "/signup"}
+          <button
+            onClick={() => onSubscribe(planKey)}
             className="w-full py-3 rounded-lg font-mono text-sm uppercase tracking-wide transition-all duration-300 flex items-center justify-center gap-2 hover:scale-[1.02]"
             style={{
               color: isPopular ? "hsl(188 86% 53%)" : isEnterprise ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)",
@@ -121,7 +131,7 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
             data-testid={`button-pricing-${plan.title.toLowerCase()}`}
           >
             {isFree ? "Get Started Free" : "Start Free Trial"}
-          </a>
+          </button>
         )}
 
         {isEnterprise && (
@@ -145,11 +155,33 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
 }
 
 export function PricingSection() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   const { data: plans, isLoading, error } = useQuery<Plan[]>({
     queryKey: ["/v1/plans/public"],
     queryFn: () => plansService.getPublic().then((res) => res.data),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
+
+  const handleSubscribe = async (planKey: string) => {
+    if (!user) {
+      navigate("/signup");
+      return;
+    }
+    try {
+      const response = await billingService.startCheckout({ plan: planKey as any });
+      const session = response.data;
+      if (session.redirectUrl) {
+        window.location.href = session.redirectUrl;
+      } else if (session.sessionId) {
+        navigate(`/checkout/${session.sessionId}`);
+      }
+    } catch (err) {
+      console.error("Failed to start checkout:", err);
+      navigate("/subscription");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -198,10 +230,9 @@ export function PricingSection() {
     return null;
   }
 
-  // Sort plans by our defined order
   const sortedPlans = [...plans].sort((a, b) => {
-    const aIndex = PLAN_ORDER.indexOf(a.title.toUpperCase().replace(/\s+/g, "_"));
-    const bIndex = PLAN_ORDER.indexOf(b.title.toUpperCase().replace(/\s+/g, "_"));
+    const aIndex = PLAN_ORDER.indexOf(mapPlanToKey(a.title));
+    const bIndex = PLAN_ORDER.indexOf(mapPlanToKey(b.title));
     return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex);
   });
 
@@ -211,7 +242,6 @@ export function PricingSection() {
       className="bg-[#0d1117] px-6 sm:px-10 py-24"
       data-testid="section-pricing"
     >
-      {/* Subtle section divider glow */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
@@ -222,7 +252,6 @@ export function PricingSection() {
       />
 
       <div className="max-w-6xl mx-auto relative">
-        {/* Section header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -240,14 +269,12 @@ export function PricingSection() {
           </p>
         </motion.div>
 
-        {/* Pricing cards - Bento grid: 3 top, 2 bottom */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {sortedPlans.map((plan, index) => (
-            <PricingCard key={plan.id} plan={plan} index={index} />
+            <PricingCard key={plan.id} plan={plan} index={index} onSubscribe={handleSubscribe} />
           ))}
         </div>
 
-        {/* Feature comparison table - reverse order (Institution first) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -265,7 +292,6 @@ export function PricingSection() {
                   <th className="text-left py-3 pr-4 font-mono text-muted-foreground uppercase tracking-wide text-xs">
                     Feature
                   </th>
-                  {/* Reverse order for table: Institution, Schools, Pro, Explorer, Free */}
                   {[...sortedPlans].reverse().map((plan) => (
                     <th key={plan.id} className="py-3 px-2 text-center">
                       <span className="font-mono text-xs uppercase tracking-wide" style={{ color: plan.title === "Pro" ? "hsl(188 86% 53%)" : plan.title === "Institution" ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)" }}>
