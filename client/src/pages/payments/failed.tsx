@@ -46,29 +46,6 @@ export default function PaymentFailedPage() {
             Back to Home
           </Link>
         </div>
-
-        <div className="mt-10 pt-8 border-t border-white/10">
-          <p className="text-[11px] font-mono text-muted-foreground/60 uppercase tracking-widest mb-4">
-            Common fixes
-          </p>
-          <div className="grid grid-cols-3 gap-4 text-left">
-            <div className="bg-white/3 p-4 rounded-xl border border-white/5">
-              <CreditCard className="h-5 w-5 text-primary mb-2" />
-              <p className="font-mono text-xs text-white">Check Card</p>
-              <p className="text-[10px] text-muted-foreground mt-1">Verify number & expiry</p>
-            </div>
-            <div className="bg-white/3 p-4 rounded-xl border border-white/5">
-              <Banknote className="h-5 w-5 text-secondary mb-2" />
-              <p className="font-mono text-xs text-white">Funds</p>
-              <p className="text-[10px] text-muted-foreground mt-1">Ensure sufficient balance</p>
-            </div>
-            <div className="bg-white/3 p-4 rounded-xl border border-white/5">
-              <Shield className="h-5 w-5 text-destructive/80 mb-2" />
-              <p className="font-mono text-xs text-white">Contact Bank</p>
-              <p className="text-[10px] text-muted-foreground mt-1">Allow international/online</p>
-            </div>
-          </div>
-        </div>
       </motion.div>
     </div>
   );
