@@ -1,33 +1,20 @@
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { Loader2, ArrowLeft, TrendingUp, Lightbulb, ArrowRight } from "lucide-react";
-import { api } from "@/lib/api";
-import { useAuth } from "@/lib/useAuth";
+import { arkService } from "@/services/ark.service";
+import { useAuth } from "@/contexts/AuthContext";
 import { getWeakestPillar, getNextTier } from "@/lib/arkCoaching";
 import type { CcmiPillarKey } from "@shared/schema";
+import type { ArkHistoryItem } from "@/types/ark";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
   ReferenceDot,
 } from "recharts";
 
-type HistoryTriggerMeta = {
-  capReason?: string | null;
-  rawDelta?: number;
-  selfOnly?: boolean;
-  eventId?: string;
-  [key: string]: unknown;
-};
-
-type HistoryRow = {
-  id: string;
-  arkScore: number;
-  jstIndex: number;
-  ccmi: number;
-  delta: number;
-  trigger: string;
-  triggerMeta: HistoryTriggerMeta | null;
-  createdAt: string;
-};
+// The documented /v1/ark/history response has no `id` or `triggerMeta` field
+// (see LL_UI_INTEGERATION.md §9) — only arkScore/jstIndex/ccmi/delta/trigger/
+// createdAt. Derive a stable row key from the timestamp instead of an id.
+type HistoryRow = ArkHistoryItem & { id: string };
 
 const TRIGGER_LABEL: Record<string, string> = {
   "assessment.completed": "Assessment",
@@ -59,14 +46,13 @@ export default function ArkHistoryPage() {
     if (!user) return;
     setLoading(true);
     Promise.all([
-      api.getArkHistory(days).catch(() => [] as HistoryRow[]),
-      api.getArkIdentity().catch(() => null),
+      arkService.getHistory(days).then((r) => r.data.data).catch(() => [] as ArkHistoryItem[]),
+      arkService.getIdentity().then((r) => r.data).catch(() => null),
     ])
-      .then(([r, id]) => {
-        setRows(Array.isArray(r) ? (r as HistoryRow[]) : []);
-        const idTyped = id as { pillars?: CcmiPillarsLite; arkScore?: number } | null;
-        setPillars(idTyped?.pillars ?? null);
-        setArkScore(idTyped?.arkScore ?? 0);
+      .then(([r, identity]) => {
+        setRows(r.map((row, i) => ({ ...row, id: `${row.createdAt}-${i}` })));
+        setPillars(identity?.ccmiPillars ?? null);
+        setArkScore(identity?.arkScore ?? 0);
       })
       .finally(() => setLoading(false));
   }, [user, days]);
@@ -134,7 +120,7 @@ export default function ArkHistoryPage() {
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
         <div>
           <Link
-            href="/dashboard"
+            to="/dashboard"
             className="inline-flex items-center text-xs font-mono text-muted-foreground hover:text-primary uppercase tracking-widest mb-2"
             data-testid="link-back-dashboard"
           >
@@ -228,7 +214,7 @@ export default function ArkHistoryPage() {
                 {weakest.tip}
               </p>
               <Link
-                href="/play"
+                to="/play"
                 className="inline-flex items-center gap-1 mt-2 px-2 py-1 rounded border border-rose-400/40 hover:border-rose-300 hover:bg-rose-400/10 transition-all font-mono text-[10px] uppercase tracking-widest text-rose-200"
                 data-testid="link-history-practice-pillar"
               >
@@ -389,9 +375,6 @@ export default function ArkHistoryPage() {
                   <span className="text-primary uppercase tracking-widest">
                     {TRIGGER_LABEL[r.trigger] ?? r.trigger}
                   </span>
-                  {r.triggerMeta?.capReason && (
-                    <span className="text-amber-400 text-[10px]">[{r.triggerMeta.capReason}]</span>
-                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   <span

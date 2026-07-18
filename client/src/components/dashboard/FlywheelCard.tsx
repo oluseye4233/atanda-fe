@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { Sparkles, ArrowRight } from "lucide-react";
 
 export type FlywheelUrgency = "critical" | "high" | "medium" | "low";
@@ -65,7 +65,7 @@ export function FlywheelCard({
         </span>
       </div>
       <Link
-        href={top.ctaHref}
+        to={top.ctaHref}
         className="block border border-secondary/40 hover:border-secondary hover:bg-secondary/10 transition-all rounded-lg p-4"
         data-testid={`button-flywheel-cta-${top.id}`}
       >
@@ -98,7 +98,7 @@ export function FlywheelCard({
           {ranked.slice(1, 3).map((c) => (
             <Link
               key={c.id}
-              href={c.ctaHref}
+              to={c.ctaHref}
               className="flex items-center justify-between text-xs font-mono text-white/70 hover:text-white border-l-2 border-white/10 hover:border-secondary pl-2 py-0.5"
               data-testid={`link-flywheel-cta-${c.id}`}
             >

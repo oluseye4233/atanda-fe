@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { TransferabilityRadar } from "@/components/pathways/TransferabilityRadar";
 import { UpskillingTimeline } from "@/components/pathways/UpskillingTimeline";
 import { SkillGapMatrix } from "@/components/pathways/SkillGapMatrix";
 import { ArrowUpRight, Loader2, Compass, Clock, Target } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
-import { api } from "@/lib/api";
 import { useSubscription } from "@/lib/useSubscription";
+import { resumeService } from "@/services/resume.service";
 import UpgradeGate from "@/components/UpgradeGate";
 import { FlippableCard } from "@/components/ui/flippable-card";
 
@@ -19,16 +19,23 @@ function feasibilityNarrative(score: number): string {
 export default function PathwaysPage() {
   const { user } = useAuth();
   const { canAccessPathways } = useSubscription();
-  const [assessment, setAssessment] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const assessmentQuery = useQuery({
+    queryKey: ["/v1/assessments", user?.id, "latest"],
+    queryFn: async () => {
+      if (!user) return null;
 
-  useEffect(() => {
-    if (!user) return;
-    api.getLatestAssessment(user.id)
-      .then(setAssessment)
-      .catch(() => setAssessment(null))
-      .finally(() => setLoading(false));
-  }, [user]);
+      try {
+        const response = await resumeService.getLatest(user.id);
+        return response.data;
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!user,
+    retry: false,
+  });
+  const assessment = assessmentQuery.data ?? null;
+  const loading = !!user && assessmentQuery.isPending;
 
   if (!canAccessPathways) {
     return (

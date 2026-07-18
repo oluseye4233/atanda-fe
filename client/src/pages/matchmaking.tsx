@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Network,
@@ -350,7 +350,7 @@ export default function MatchmakingPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {rows.map(({ opportunity: o, requirementCount, match }) => (
-            <Link key={o.id} href={`/matchmaking/${o.id}`}>
+            <Link key={o.id} to={`/matchmaking/${o.id}`}>
               <Card className="glass-card cursor-pointer border-white/10 transition hover:border-cyan-500/40" data-testid={`card-opportunity-${o.id}`}>
                 <CardContent className="flex gap-4 p-5">
                   <MatchRing score={match.matchScore} />

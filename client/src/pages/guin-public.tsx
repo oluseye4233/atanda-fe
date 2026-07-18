@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useRoute, Link } from "wouter";
+import { useMatch, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { formatPriceUsd as formatPriceDual } from "@shared/schema";
 import {
@@ -22,70 +22,12 @@ import {
   AlertTriangle,
   Trophy,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/apiError";
 import { useAuth } from "@/lib/useAuth";
+import { ccgeService } from "@/services/ccge.service";
+import { guinService } from "@/services/guin.service";
+import type { GuinProfile } from "@/types/guin";
 import { CONTEXT_CRAFT_LEVELS, CERT_LEVEL_RANK, ENDORSEMENT_MAX_LEN, type ContextCraftLevel } from "@shared/schema";
-
-type GuinProfile = {
-  user: {
-    id: string;
-    username: string;
-    name: string;
-    role: string | null;
-    department: string | null;
-    seniority: string | null;
-    location: string | null;
-    contextCraftCertLevel: string | null;
-    institution: string | null;
-  };
-  knight: {
-    current: { key: string; label: string; min: number; color: string; icon: string };
-    next: { key: string; label: string; min: number; color: string; icon: string } | null;
-    progress: number;
-    totalKcseEarned: number;
-  };
-  stats: {
-    totalKcseEarned: number;
-    sessionsFinished: number;
-    sessionsWon: number;
-    ownedCardsCount: number;
-    publishedSpcsCount: number;
-    endorsementsCount: number;
-  };
-  kcseRadar: { axis: string; value: number }[];
-  ownedCards: {
-    id: string;
-    name: string;
-    pillar: string;
-    type: string;
-    emoji: string;
-    baseKcse: number;
-    description: string;
-  }[];
-  publishedSpcs: {
-    id: string;
-    title: string;
-    pillar: string;
-    priceCredits: number;
-    kcseScore: number;
-    hiveScore: number;
-    salesCount: number;
-  }[];
-  endorsements: {
-    id: string;
-    message: string;
-    createdAt: string;
-    sessionId: string;
-    endorser: { id: string; name: string; username: string; contextCraftCertLevel: string | null } | null;
-  }[];
-  recentSessions: {
-    id: string;
-    scenarioId: string;
-    kcseScore: number | null;
-    certTierEarned: string | null;
-    finishedAt: string | null;
-  }[];
-};
 
 export function GuinProfileView({ profile, viewerCanEndorse, onEndorse }: {
   profile: GuinProfile;
@@ -154,7 +96,7 @@ export function GuinProfileView({ profile, viewerCanEndorse, onEndorse }: {
         </div>
 
         <div className="relative mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Link href={`/u/${profile.user.username}`} className="text-left">
+          <Link to={`/u/${profile.user.username}`} className="text-left">
             <div className="glass-card p-3 rounded-lg border border-white/5">
               <div className="text-[9px] uppercase font-mono tracking-widest text-muted-foreground">Cert</div>
               <div className="font-display font-bold text-sm" style={{ color: cert.color }} data-testid="text-guin-cert">
@@ -259,7 +201,7 @@ export function GuinProfileView({ profile, viewerCanEndorse, onEndorse }: {
             {profile.publishedSpcs.map((s) => (
               <Link
                 key={s.id}
-                href={`/marketplace/${s.id}`}
+                to={`/marketplace/${s.id}`}
                 className="block glass-card p-3 rounded-lg border border-white/5 hover:border-primary/30 transition-colors"
                 data-testid={`link-published-spc-${s.id}`}
               >
@@ -307,7 +249,7 @@ function EndorsementsBlock({
 }) {
   const { user: viewer } = useAuth();
   const [open, setOpen] = useState(false);
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<Array<{ id: string; scenarioId: string; status: string; kcseScore: number | null }>>([]);
   const [sessionId, setSessionId] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -316,9 +258,9 @@ function EndorsementsBlock({
 
   useEffect(() => {
     if (open && viewer) {
-      api
-        .getCcgeUserSessions(viewer.id)
-        .then((rows) => setSessions(rows.filter((s: any) => s.status === "finished" && s.kcseScore != null)))
+      ccgeService
+        .getUserSessions(viewer.id)
+        .then(({ data }) => setSessions(data.data.filter((session) => session.status === "finished" && session.kcseScore !== null)))
         .catch(() => setSessions([]));
     }
   }, [open, viewer]);
@@ -328,7 +270,7 @@ function EndorsementsBlock({
     setSubmitting(true);
     setError(null);
     try {
-      await api.createEndorsement({
+      await guinService.createEndorsement({
         recipientId: profile.user.id,
         sessionId,
         message,
@@ -339,8 +281,8 @@ function EndorsementsBlock({
       setSessionId("");
       onEndorse?.();
       setTimeout(() => setSuccess(false), 2500);
-    } catch (e: any) {
-      setError(e?.message || "Failed to post endorsement.");
+    } catch (error: unknown) {
+      setError(getApiErrorMessage(error, "Couldn't post the endorsement. Check your connection and try again."));
     } finally {
       setSubmitting(false);
     }
@@ -389,7 +331,7 @@ function EndorsementsBlock({
               <option value="">— select session —</option>
               {sessions.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.scenarioId} · KCSE {s.kcseScore?.toFixed(1)} {s.certTierEarned ? `(${s.certTierEarned})` : ""}
+                  {s.scenarioId} · KCSE {s.kcseScore?.toFixed(1)}
                 </option>
               ))}
             </select>
@@ -457,7 +399,7 @@ function EndorsementsBlock({
               >
                 <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
                   <Link
-                    href={e.endorser ? `/u/${e.endorser.username}` : "#"}
+                    to={e.endorser ? `/u/${e.endorser.username}` : "#"}
                     className="flex items-center gap-2 hover:underline"
                   >
                     <Award className="h-3.5 w-3.5 text-purple-300" />
@@ -486,7 +428,8 @@ function EndorsementsBlock({
 }
 
 export default function GuinPublicPage() {
-  const [, params] = useRoute<{ username: string }>("/u/:username");
+  const match = useMatch("/u/:username");
+  const params = match?.params as { username: string } | undefined;
   const username = params?.username || "";
   const { user: viewer } = useAuth();
   const [profile, setProfile] = useState<GuinProfile | null>(null);
@@ -495,10 +438,10 @@ export default function GuinPublicPage() {
   const load = () => {
     if (!username) return;
     setError(null);
-    api
-      .getGuinByUsername(username)
-      .then(setProfile)
-      .catch((e) => setError(e?.message || "Profile not found."));
+    guinService
+      .getByUsername(username)
+      .then(({ data }) => setProfile(data))
+      .catch((error: unknown) => setError(getApiErrorMessage(error, "Profile not found.")));
   };
 
   useEffect(() => {
@@ -541,7 +484,7 @@ export default function GuinPublicPage() {
           </p>
         </div>
         {viewer?.id === profile.user.id && (
-          <Link href="/profile">
+          <Link to="/profile">
             <a className="px-3 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-wider border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20" data-testid="link-edit-profile">
               Edit Profile
             </a>

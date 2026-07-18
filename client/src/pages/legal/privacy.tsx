@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { ArrowLeft, Shield, Lock, Eye, Trash2, Download } from "lucide-react";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -37,7 +37,7 @@ export default function PrivacyPage() {
       {/* Sticky nav bar */}
       <header className="sticky top-0 z-10 border-b border-white/6 bg-[#0d1117]/90 backdrop-blur-xl px-6 sm:px-10 h-14 flex items-center justify-between">
         <Link
-          href="/"
+          to="/"
           data-testid="link-home"
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-white transition-colors text-sm font-mono"
         >

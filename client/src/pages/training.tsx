@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import {
   GraduationCap,
   Loader2,
@@ -99,7 +99,7 @@ function MatchCard({ result }: { result: SuggestedResult }) {
             {course.title}
           </h3>
           <Link
-            href={`/training/p/${provider.slug}`}
+            to={`/training/p/${provider.slug}`}
             className="text-xs font-mono text-secondary hover:text-secondary/80 inline-flex items-center gap-1"
             data-testid={`link-provider-${provider.slug}`}
           >
@@ -153,7 +153,7 @@ function MatchCard({ result }: { result: SuggestedResult }) {
 function ProviderCard({ provider }: { provider: ProviderDto }) {
   return (
     <Link
-      href={`/training/p/${provider.slug}`}
+      to={`/training/p/${provider.slug}`}
       data-testid={`card-provider-${provider.slug}`}
       className="group glass-card rounded-xl p-5 border border-white/10 hover:border-primary/40 transition-colors flex flex-col gap-3"
     >
@@ -268,7 +268,7 @@ export default function TrainingPage() {
           </p>
         </div>
         <Link
-          href="/training/register"
+          to="/training/register"
           data-testid="link-register-provider"
           className="inline-flex items-center gap-2 self-start font-mono text-xs uppercase tracking-wider px-4 py-2.5 rounded-lg bg-secondary/15 text-secondary border border-secondary/30 hover:bg-secondary/25 transition-colors"
         >
@@ -285,7 +285,7 @@ export default function TrainingPage() {
           <div className="glass-card rounded-xl p-6 border border-white/10 text-center" data-testid="text-suggested-empty">
             <p className="text-sm text-muted-foreground font-mono">{suggestedMsg}</p>
             <Link
-              href="/upload"
+              to="/upload"
               className="inline-flex items-center gap-1.5 mt-3 text-xs font-mono uppercase tracking-widest text-primary hover:text-primary/80"
             >
               Upload a resume <ArrowUpRight className="h-3.5 w-3.5" />

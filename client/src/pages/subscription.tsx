@@ -1,92 +1,54 @@
-import { useState, useEffect } from "react";
-import { FEATURES } from "@shared/featureFlags";
-import { useLocation } from "wouter";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/useAuth";
-import { api } from "@/lib/api";
-import { SUBSCRIPTION_PLANS, F1000_PROMO, type SubscriptionPlan } from "@shared/schema";
-import {
-  Crown,
-  GraduationCap,
-  User,
-  Building2,
-  Check,
-  Zap,
-  ArrowRight,
-  CheckCircle2,
-  Sparkles,
-  Shield,
-  AlertTriangle,
-  Compass,
-} from "lucide-react";
+import { getApiErrorMessage } from "@/lib/apiError";
+import { subscriptionsService } from "@/services/subscriptions.service";
+import { plansService } from "@/services/plans.service";
+import type { Plan } from "@/types/plans";
+import type { CreateSubscriptionBody } from "@/types/subscriptions";
+import { Building2, Check, Zap, ArrowRight, CheckCircle2, Shield, AlertTriangle } from "lucide-react";
 
-const PLAN_ICONS: Record<string, typeof User> = {
-  INDIVIDUAL_FREE: User,
-  INDIVIDUAL_EXPLORER: Compass,
-  INDIVIDUAL_PRO: Crown,
-  SCHOOL_STUDENT: GraduationCap,
-  ENTERPRISE: Building2,
-};
+const DEFAULT_COLOR = "hsl(188 86% 53%)";
 
 export default function SubscriptionPage() {
   const { user, updateUser } = useAuth();
-  const [, setLocation] = useLocation();
-  const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan>("INDIVIDUAL_FREE");
+  const navigate = useNavigate();
   const [isUpdating, setIsUpdating] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
-  const [institution, setInstitution] = useState("");
 
-  const f1000Query = useQuery<{ member: boolean }>({
-    queryKey: ["/api/f1000/me"],
-    queryFn: () => api.getF1000Me(),
-    enabled: FEATURES.f1000Promo && !!user,
-    refetchOnWindowFocus: false,
+  const plansQuery = useQuery<Plan[]>({
+    queryKey: ["/v1/plans/public"],
+    queryFn: () => plansService.getPublic().then((res) => res.data),
+    staleTime: 1000 * 60 * 5,
   });
-  const isF1000 = !!f1000Query.data?.member;
-  const promoPriceFor = (key: SubscriptionPlan): number | null =>
-    isF1000 && F1000_PROMO.priceUsd[key] != null ? F1000_PROMO.priceUsd[key] : null;
-  const promoAiUsdFor = (key: SubscriptionPlan): number | null =>
-    isF1000 && F1000_PROMO.aiCostBudgetCents[key] != null
-      ? Math.round(F1000_PROMO.aiCostBudgetCents[key] / 100)
-      : null;
 
-  useEffect(() => {
-    if (user?.subscriptionPlan) {
-      setCurrentPlan(user.subscriptionPlan as SubscriptionPlan);
-    }
-    if (user?.institution) {
-      setInstitution(user.institution);
-    }
-  }, [user]);
-
-  const handleSubscribe = async (plan: SubscriptionPlan) => {
-    if (!user) return;
-    setErrorMsg(null);
-    if (plan === "ENTERPRISE") {
-      setErrorMsg("Enterprise plans are configured by sales — please contact us.");
+  const handleSubscribe = async (planId: string) => {
+    if (!user) {
+      navigate("/signup");
       return;
     }
+    setErrorMsg(null);
     setIsUpdating(true);
     try {
-      const session = await api.startCheckout(
-        plan,
-        plan === "SCHOOL_STUDENT" ? institution : undefined,
-      );
-      if (!session.requiresPayment) {
-        await api.completeCheckout(session.sessionId, true);
-        setCurrentPlan(plan);
-        updateUser({ subscriptionPlan: plan, subscriptionStatus: "active" });
-        setShowSuccess(true);
-        setSelectedPlan(null);
-        setTimeout(() => setShowSuccess(false), 3000);
+      const idempotencyKey = `sub_${user.id}_${planId}_${Date.now()}`;
+      
+      const body: CreateSubscriptionBody = {
+        planId,
+        duration: "monthly",
+      };
+
+      const response = await subscriptionsService.create(body, idempotencyKey);
+      const data = response.data;
+
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
       } else {
-        setLocation(session.redirectUrl);
+        setErrorMsg("Checkout couldn't be opened. Please try again.");
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || "Failed to start checkout.");
+    } catch (err: unknown) {
+      setErrorMsg(getApiErrorMessage(err, "Couldn't start checkout. Please try again."));
     } finally {
       setIsUpdating(false);
     }
@@ -98,20 +60,59 @@ export default function SubscriptionPage() {
     setIsUpdating(true);
     setErrorMsg(null);
     try {
-      const r = await api.cancelSubscription();
+      const subResponse = await subscriptionsService.getMine();
+      const subscription = subResponse.data;
+      
+      if (subscription.id) {
+        await subscriptionsService.update(subscription.id, { status: "inactive" });
+      }
       updateUser({ subscriptionStatus: "canceling" });
-      setShowSuccess(true);
-      setErrorMsg(`Subscription will end on ${new Date(r.effectiveAt).toLocaleDateString()}.`);
-      setTimeout(() => setShowSuccess(false), 3000);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Cancel failed.");
+      setErrorMsg("Subscription will be canceled at the end of the current period.");
+    } catch (err: unknown) {
+      setErrorMsg(getApiErrorMessage(err, "Couldn't cancel the subscription. Please try again."));
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const plans = Object.entries(SUBSCRIPTION_PLANS) as [SubscriptionPlan, typeof SUBSCRIPTION_PLANS[SubscriptionPlan]][];
-  const currentPlanData = SUBSCRIPTION_PLANS[currentPlan];
+  if (plansQuery.isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-8">
+        <div className="animate-pulse space-y-8">
+          <div className="h-8 bg-white/5 rounded w-1/4" />
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="glass-card rounded-xl p-6 flex flex-col space-y-4">
+                <div className="h-10 bg-white/5 rounded" />
+                <div className="h-8 bg-white/5 rounded w-3/4" />
+                <div className="h-4 bg-white/5 rounded" />
+                <div className="h-4 bg-white/5 rounded" />
+                <div className="h-4 bg-white/5 rounded" />
+                <div className="h-4 bg-white/5 rounded" />
+                <div className="h-10 bg-white/5 rounded mt-auto" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (plansQuery.error || !plansQuery.data) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-8">
+        <div className="glass-card p-8 text-center">
+          <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <p className="font-mono text-sm text-muted-foreground">Unable to load plans. Please try again later.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const plans = plansQuery.data;
+  const currentPlanId = user?.planId || null;
+  const currentPlanData = plans.find((p) => p.id === currentPlanId) || plans[0];
+  const isSubscribed = user?.planId && user.planId !== "INDIVIDUAL_FREE";
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -125,70 +126,6 @@ export default function SubscriptionPage() {
       </div>
 
       <AnimatePresence>
-        {showSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="glass-card p-4 rounded-xl border border-secondary/30 bg-secondary/5 flex items-center gap-3"
-            data-testid="alert-subscription-updated"
-          >
-            <CheckCircle2 className="h-5 w-5 text-secondary flex-shrink-0" />
-            <span className="font-mono text-sm text-secondary">
-              Subscription updated successfully. Your new plan features are now active.
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="glass-card p-6 rounded-xl" data-testid="card-current-plan">
-        <div className="flex items-center gap-4">
-          <div
-            className="w-14 h-14 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: `${currentPlanData.color}15`, border: `2px solid ${currentPlanData.color}40` }}
-          >
-            {(() => {
-              const Icon = PLAN_ICONS[currentPlan] || User;
-              return <Icon className="h-7 w-7" style={{ color: currentPlanData.color }} />;
-            })()}
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <h2 className="font-display font-bold text-xl text-white" data-testid="text-current-plan">
-                {currentPlanData.label}
-              </h2>
-              <span
-                className="px-2 py-0.5 rounded text-xs font-mono font-bold uppercase"
-                style={{ color: currentPlanData.color, backgroundColor: `${currentPlanData.color}15`, border: `1px solid ${currentPlanData.color}30` }}
-                data-testid="text-subscription-status"
-              >
-                {user?.subscriptionStatus === "canceling" ? "CANCELING" : (user?.subscriptionStatus || "ACTIVE").toUpperCase()}
-              </span>
-            </div>
-            <p className="text-muted-foreground text-sm mt-1">
-              {currentPlanData.price === 0
-                ? currentPlan === "ENTERPRISE" ? "Custom pricing" : "Free tier"
-                : `$${currentPlanData.price}/${currentPlanData.period}`
-              }
-              {user?.institution && currentPlan === "SCHOOL_STUDENT" && (
-                <span className="ml-2 text-primary/70">{user.institution}</span>
-              )}
-            </p>
-          </div>
-          {FEATURES.subscriptionCancel && currentPlanData.price > 0 && currentPlan !== "ENTERPRISE" && user?.subscriptionStatus !== "canceling" && (
-            <button
-              onClick={handleCancel}
-              disabled={isUpdating}
-              className="px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wide border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
-              data-testid="button-cancel-subscription"
-            >
-              Cancel
-            </button>
-          )}
-        </div>
-      </div>
-
-      <AnimatePresence>
         {errorMsg && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -197,39 +134,80 @@ export default function SubscriptionPage() {
             className="glass-card p-4 rounded-xl border border-destructive/30 bg-destructive/5 flex items-center gap-3"
             data-testid="alert-billing-error"
           >
-            <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0" />
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
             <span className="font-mono text-sm text-destructive">{errorMsg}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {isSubscribed ? (
+        <div className="glass-card p-6 rounded-xl" data-testid="card-current-plan">
+          <div className="flex items-center gap-4">
+            <div
+              className="w-14 h-14 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${DEFAULT_COLOR}15`, border: `2px solid ${DEFAULT_COLOR}40` }}
+            >
+              <Building2 className="h-7 w-7" style={{ color: DEFAULT_COLOR }} />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <h2 className="font-display font-bold text-xl text-white" data-testid="text-current-plan">
+                  {currentPlanData.title}
+                </h2>
+                <span
+                  className="px-2 py-0.5 rounded text-xs font-mono font-bold uppercase"
+                  style={{ color: DEFAULT_COLOR, backgroundColor: `${DEFAULT_COLOR}15`, border: `1px solid ${DEFAULT_COLOR}30` }}
+                  data-testid="text-subscription-status"
+                >
+                  {user?.subscriptionStatus === "canceling" ? "CANCELING" : (user?.subscriptionStatus || "ACTIVE").toUpperCase()}
+                </span>
+              </div>
+              <p className="text-muted-foreground text-sm mt-1">
+                {currentPlanData.monthlyPrice === "0.00" ? "Free tier" : `$${currentPlanData.monthlyPrice}/month`}
+                {user?.institution && (
+                  <span className="ml-2 text-primary/70">{user.institution}</span>
+                )}
+              </p>
+            </div>
+            {Number(currentPlanData.monthlyPrice) > 0 && user?.subscriptionStatus !== "canceling" && (
+              <button
+                onClick={handleCancel}
+                disabled={isUpdating}
+                className="px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wide border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
+                data-testid="button-cancel-subscription"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="glass-card p-6 rounded-xl text-center" data-testid="card-no-subscription">
+          <Shield className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+          <h2 className="font-display font-bold text-xl text-white mb-2">No active subscription</h2>
+          <p className="text-muted-foreground text-sm mb-6">
+            You&apos;re on the Free tier. Upgrade to unlock full ARK intelligence.
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {plans.map(([key, planData], index) => {
-          const isCurrent = key === currentPlan;
-          const Icon = PLAN_ICONS[key] || User;
-          const isPopular = key === "INDIVIDUAL_PRO";
-          const isSchool = key === "SCHOOL_STUDENT";
-          const isEnterprise = key === "ENTERPRISE";
+        {plans.map((plan) => {
+          const isCurrent = plan.id === currentPlanId;
+          const isFree = plan.monthlyPrice === "0.00";
 
           return (
             <motion.div
-              key={key}
+              key={plan.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={`glass-card rounded-xl overflow-hidden flex flex-col relative ${
-                isCurrent ? "ring-2" : isPopular ? "ring-1 ring-primary/40" : ""
-              }`}
-              style={isCurrent ? { borderColor: `${planData.color}50` } : {}}
-              data-testid={`card-plan-${key.toLowerCase()}`}
+              transition={{ delay: 0.1 }}
+              className={`glass-card rounded-xl overflow-hidden flex flex-col relative ${isCurrent ? "ring-2" : ""}`}
+              style={isCurrent ? { borderColor: `${DEFAULT_COLOR}50` } : {}}
+              data-testid={`card-plan-${plan.id}`}
             >
-              {isPopular && !isCurrent && (
-                <div className="bg-primary text-primary-foreground text-[10px] font-mono uppercase tracking-widest text-center py-1.5 flex items-center justify-center gap-1">
-                  <Sparkles className="h-3 w-3" /> Most Popular
-                </div>
-              )}
               {isCurrent && (
-                <div className="text-[10px] font-mono uppercase tracking-widest text-center py-1.5 flex items-center justify-center gap-1" style={{ backgroundColor: `${planData.color}20`, color: planData.color }}>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-center py-1.5 flex items-center justify-center gap-1" style={{ backgroundColor: `${DEFAULT_COLOR}20`, color: DEFAULT_COLOR }}>
                   <Shield className="h-3 w-3" /> Current Plan
                 </div>
               )}
@@ -238,102 +216,67 @@ export default function SubscriptionPage() {
                 <div className="flex items-center gap-3 mb-4">
                   <div
                     className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: `${planData.color}15`, border: `1px solid ${planData.color}30` }}
+                    style={{ backgroundColor: `${DEFAULT_COLOR}15`, border: `1px solid ${DEFAULT_COLOR}30` }}
                   >
-                    <Icon className="h-5 w-5" style={{ color: planData.color }} />
+                    <Building2 className="h-5 w-5" style={{ color: DEFAULT_COLOR }} />
                   </div>
                   <div>
-                    <h3 className="font-display font-bold text-white text-sm uppercase tracking-wide">{planData.label}</h3>
-                    <span className="text-[10px] font-mono text-muted-foreground uppercase">{planData.type}</span>
+                    <h3 className="font-display font-bold text-white text-sm uppercase tracking-wide">{plan.title}</h3>
+                    <span className="text-[10px] font-mono text-muted-foreground uppercase">{plan.freeTrial ? "Free trial available" : "No free trial"}</span>
                   </div>
                 </div>
 
                 <div className="mb-6">
-                  {planData.price === 0 ? (
+                  {isFree ? (
                     <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-display font-black text-white">
-                        {isEnterprise ? "Custom" : "Free"}
+                      <span className="text-3xl font-display font-black text-white">Free</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <div className="flex items-baseline gap-1 flex-wrap">
+                        <span className="text-3xl font-display font-black text-white">
+                          ${Number(plan.monthlyPrice).toFixed(2)}
+                        </span>
+                        <span className="text-sm text-muted-foreground font-mono">/month</span>
+                      </div>
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-secondary">
+                        ${Number(plan.yearlyPrice).toFixed(2)}/year (save ~17%)
                       </span>
                     </div>
-                  ) : (() => {
-                    const promo = promoPriceFor(key);
-                    const aiUsd = promoAiUsdFor(key);
-                    return (
-                      <div className="space-y-1">
-                        <div className="flex items-baseline gap-1 flex-wrap">
-                          <span className="text-3xl font-display font-black text-white">
-                            ${promo ?? planData.price}
-                          </span>
-                          <span className="text-sm text-muted-foreground font-mono">/{planData.period}</span>
-                          {promo != null && (
-                            <>
-                              <span className="ml-2 text-sm text-muted-foreground/60 font-mono line-through" data-testid={`text-original-price-${key.toLowerCase()}`}>
-                                ${planData.price}
-                              </span>
-                              <span className="ml-1 text-[10px] font-mono uppercase tracking-widest text-primary" data-testid={`badge-f1000-price-${key.toLowerCase()}`}>
-                                F1000
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        {aiUsd != null && (
-                          <span className="text-[10px] font-mono uppercase tracking-widest text-secondary">
-                            incl. ${aiUsd}/mo AI allowance
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })()}
+                  )}
                 </div>
 
-                <div className="space-y-2.5 mb-6 flex-1">
-                  {planData.features.map((feature, i) => (
+                <p className="text-sm text-muted-foreground leading-relaxed mb-6 flex-1">
+                  {plan.description}
+                </p>
+
+                <div className="space-y-2.5 mb-6">
+                  {plan.features.slice(0, 4).map((feature, i) => (
                     <div key={i} className="flex items-start gap-2">
-                      <Check className="h-4 w-4 flex-shrink-0 mt-0.5" style={{ color: planData.color }} />
+                      <Check className="h-4 w-4 shrink-0 mt-0.5" style={{ color: DEFAULT_COLOR }} />
                       <span className="text-sm text-muted-foreground">{feature}</span>
                     </div>
                   ))}
                 </div>
 
-                {!isCurrent && !isEnterprise && (
+                {!isCurrent && (
                   <button
-                    onClick={() => {
-                      if (isSchool) {
-                        setSelectedPlan(selectedPlan === key ? null : key);
-                      } else {
-                        handleSubscribe(key);
-                      }
-                    }}
+                    onClick={() => handleSubscribe(plan.id)}
                     disabled={isUpdating}
                     className="w-full py-3 rounded-lg font-mono text-sm uppercase tracking-wide transition-all duration-300 flex items-center justify-center gap-2 hover:scale-[1.02]"
                     style={{
-                      color: planData.color,
-                      backgroundColor: `${planData.color}15`,
-                      border: `1px solid ${planData.color}30`,
+                      color: DEFAULT_COLOR,
+                      backgroundColor: `${DEFAULT_COLOR}15`,
+                      border: `1px solid ${DEFAULT_COLOR}30`,
                     }}
-                    data-testid={`button-subscribe-${key.toLowerCase()}`}
+                    data-testid={`button-subscribe-${plan.id}`}
                   >
                     {isUpdating ? (
                       <Zap className="h-4 w-4 animate-spin" />
                     ) : (
                       <ArrowRight className="h-4 w-4" />
                     )}
-                    {isUpdating ? "Processing..." : isSchool ? "Select Plan" : "Subscribe"}
-                  </button>
-                )}
-
-                {isEnterprise && !isCurrent && (
-                  <button
-                    className="w-full py-3 rounded-lg font-mono text-sm uppercase tracking-wide transition-all duration-300 flex items-center justify-center gap-2 opacity-60 cursor-default"
-                    style={{
-                      color: planData.color,
-                      backgroundColor: `${planData.color}10`,
-                      border: `1px solid ${planData.color}20`,
-                    }}
-                    data-testid="button-contact-sales"
-                  >
-                    <Building2 className="h-4 w-4" />
-                    Contact Sales
+                    {isUpdating ? "Processing..." : "Subscribe"}
                   </button>
                 )}
 
@@ -341,9 +284,9 @@ export default function SubscriptionPage() {
                   <div
                     className="w-full py-3 rounded-lg font-mono text-sm uppercase tracking-wide flex items-center justify-center gap-2"
                     style={{
-                      color: planData.color,
-                      backgroundColor: `${planData.color}10`,
-                      border: `1px solid ${planData.color}20`,
+                      color: DEFAULT_COLOR,
+                      backgroundColor: `${DEFAULT_COLOR}10`,
+                      border: `1px solid ${DEFAULT_COLOR}20`,
                     }}
                   >
                     <CheckCircle2 className="h-4 w-4" />
@@ -351,49 +294,6 @@ export default function SubscriptionPage() {
                   </div>
                 )}
               </div>
-
-              <AnimatePresence>
-                {selectedPlan === key && isSchool && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="px-6 pb-6 pt-2 border-t border-white/10 space-y-3">
-                      <label className="text-[10px] uppercase font-mono text-muted-foreground tracking-widest block">
-                        School / University Name
-                      </label>
-                      <input
-                        data-testid="input-institution"
-                        type="text"
-                        value={institution}
-                        onChange={(e) => setInstitution(e.target.value)}
-                        placeholder="Enter your institution name"
-                        className="w-full bg-black/40 border border-white/10 rounded-md px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-purple-500/50 transition-colors"
-                      />
-                      <button
-                        onClick={() => handleSubscribe(key)}
-                        disabled={isUpdating || !institution.trim()}
-                        className="w-full py-3 rounded-lg font-mono text-sm uppercase tracking-wide transition-all duration-300 flex items-center justify-center gap-2 hover:scale-[1.02] disabled:opacity-40"
-                        style={{
-                          color: planData.color,
-                          backgroundColor: `${planData.color}15`,
-                          border: `1px solid ${planData.color}30`,
-                        }}
-                        data-testid="button-confirm-school-subscription"
-                      >
-                        {isUpdating ? (
-                          <Zap className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <GraduationCap className="h-4 w-4" />
-                        )}
-                        {isUpdating ? "Processing..." : "Activate Student Plan"}
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </motion.div>
           );
         })}
@@ -408,10 +308,10 @@ export default function SubscriptionPage() {
             <thead>
               <tr className="border-b border-white/10">
                 <th className="text-left py-3 pr-4 font-mono text-muted-foreground uppercase tracking-wide text-xs">Feature</th>
-                {plans.map(([key, planData]) => (
-                  <th key={key} className="py-3 px-2 text-center">
-                    <span className="font-mono text-xs uppercase tracking-wide" style={{ color: planData.color }}>
-                      {planData.label.split(" ").slice(-1)[0]}
+                {plans.map((plan) => (
+                  <th key={plan.id} className="py-3 px-2 text-center">
+                    <span className="font-mono text-xs uppercase tracking-wide" style={{ color: DEFAULT_COLOR }}>
+                      {plan.title}
                     </span>
                   </th>
                 ))}
@@ -419,16 +319,16 @@ export default function SubscriptionPage() {
             </thead>
             <tbody>
               {[
-                { feature: "Resume Uploads", values: ["1/month", "Unlimited", "Unlimited", "Unlimited"] },
-                { feature: "JST Score", values: [true, true, true, true] },
-                { feature: "Full Dashboard", values: [true, true, true, true] },
-                { feature: "Career Pathways", values: [false, true, true, true] },
-                { feature: "FORGE Cards", values: [false, true, true, true] },
-                { feature: "Executive Report", values: [false, true, true, true] },
-                { feature: "Context Craft", values: [false, true, true, true] },
-                { feature: "Workforce Intel", values: [false, false, false, true] },
-                { feature: "Institution Dashboard", values: [false, false, true, false] },
-                { feature: "Priority Support", values: [false, false, false, true] },
+                { feature: "Resume Uploads", values: ["1/month", "Unlimited", "Unlimited", "Unlimited", "Unlimited"] },
+                { feature: "JST Score", values: [true, true, true, true, true] },
+                { feature: "Full Dashboard", values: [true, true, true, true, true] },
+                { feature: "Career Pathways", values: [false, true, true, true, true] },
+                { feature: "FORGE Cards", values: [false, true, true, true, true] },
+                { feature: "Executive Report", values: [false, true, true, true, true] },
+                { feature: "Context Craft", values: [false, true, true, true, true] },
+                { feature: "Workforce Intel", values: [false, false, false, false, true] },
+                { feature: "Institution Dashboard", values: [false, false, false, true, false] },
+                { feature: "Priority Support", values: [false, false, false, false, true] },
               ].map((row, i) => (
                 <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                   <td className="py-3 pr-4 text-muted-foreground font-mono text-xs">{row.feature}</td>
@@ -436,7 +336,7 @@ export default function SubscriptionPage() {
                     <td key={j} className="py-3 px-2 text-center">
                       {typeof val === "boolean" ? (
                         val ? (
-                          <Check className="h-4 w-4 mx-auto" style={{ color: plans[j][1].color }} />
+                          <Check className="h-4 w-4 mx-auto" style={{ color: DEFAULT_COLOR }} />
                         ) : (
                           <span className="text-muted-foreground/30">—</span>
                         )
@@ -451,9 +351,6 @@ export default function SubscriptionPage() {
           </table>
         </div>
       </div>
-
-      <AnimatePresence>
-      </AnimatePresence>
     </div>
   );
 }

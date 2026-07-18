@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import atandaLogo from "@assets/WEB_LEARNING_SYSTEMS_(1920_x_1280_px)_(2)_1779729580194.png";
 import {
@@ -6,21 +6,13 @@ import {
   Upload,
   Activity,
   Map,
-  Users,
-  Home as HomeIcon,
   CreditCard,
   User,
-  GraduationCap,
   Gamepad2,
-  ShoppingBag,
-  Building2,
   HelpCircle,
-  BookOpen,
   Menu,
-  X,
   Shield,
   FileText,
-  Network,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,6 +22,7 @@ import { useAuth } from "@/lib/useAuth";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { AiBudgetBanner } from "@/components/layout/AiBudgetBanner";
+import { EmailVerificationBanner } from "@/components/layout/EmailVerificationBanner";
 import { useNotificationStream, type ArkRoundtableEvent } from "@/lib/useArkStream";
 import { useToast } from "@/hooks/use-toast";
 import { useCallback } from "react";
@@ -64,43 +57,53 @@ interface NavGroup {
 interface FlaggedNavItem extends NavItem { flag: keyof typeof FEATURES | null }
 interface FlaggedNavGroup { label: string; items: FlaggedNavItem[] }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MVP LAUNCH SCOPE — only two modules are live:
+//   1. Career Assessment  (Upload CV → JST score + reports)
+//   2. Upskilling Games    (CCGE Skill Games)
+// Everything else is commented out until its module is picked up again.
+// Do NOT delete — these are next in the backlog.
+// ─────────────────────────────────────────────────────────────────────────────
 const ALL_NAV_GROUPS: FlaggedNavGroup[] = [
   {
     label: "Analyze",
     items: [
-      { name: "Home", href: "/", icon: HomeIcon, hint: "Landing & overview", flag: null },
-      { name: "Upload CV", href: "/upload", icon: Upload, hint: "Run a new assessment", flag: null },
       { name: "Intelligence Hub", href: "/dashboard", icon: BarChart3, hint: "Your scores & insights", flag: null },
+      { name: "Upload CV", href: "/upload", icon: Upload, hint: "Run a new assessment", flag: null },
       { name: "ARK Resume", href: "/ark-resume", icon: FileText, hint: "ATS-optimized verified resume", flag: "arkResume" },
-      { name: "Book Companion", href: "/book", icon: BookOpen, hint: "Context Craft reading journey", flag: "bookCompanion" },
+      // ── Out of MVP scope ──
+      // { name: "Book Companion", href: "/book", icon: BookOpen, hint: "Context Craft reading journey", flag: "bookCompanion" },
     ],
   },
   {
     label: "Explore",
     items: [
       { name: "Skill Games", href: "/play", icon: Gamepad2, hint: "CCGE Arena — earn points", flag: null },
-      { name: "Marketplace", href: "/marketplace", icon: ShoppingBag, hint: "SPHINX listings", flag: null },
-      { name: "Corporate Marketplace", href: "/marketplace/corporate", icon: Building2, hint: "Your institution's SPCs", flag: "corporateMarketplace" },
-      { name: "Roundtable", href: "/marketplace/roundtable", icon: Activity, hint: "Top-12 SPC leaderboard", flag: "sphinxAdvanced" },
-      { name: "Synergy Lab", href: "/marketplace/synergy", icon: HelpCircle, hint: "Test card combinations", flag: "sphinxAdvanced" },
-      { name: "Forge Lab", href: "/marketplace/forge-lab", icon: Upload, hint: "Upload .docx → HIVE pre-check", flag: "forgeLabDocx" },
       { name: "Career Mobility", href: "/pathways", icon: Map, hint: "Pivot opportunities", flag: null },
-      { name: "Training Providers", href: "/training", icon: GraduationCap, hint: "JST-matched certifications", flag: "trainingProviders" },
+      // ── Out of MVP scope (SPHINX marketplace + training) ──
+      // { name: "Marketplace", href: "/marketplace", icon: ShoppingBag, hint: "SPHINX listings", flag: null },
+      // { name: "Corporate Marketplace", href: "/marketplace/corporate", icon: Building2, hint: "Your institution's SPCs", flag: "corporateMarketplace" },
+      // { name: "Roundtable", href: "/marketplace/roundtable", icon: Activity, hint: "Top-12 SPC leaderboard", flag: "sphinxAdvanced" },
+      // { name: "Synergy Lab", href: "/marketplace/synergy", icon: HelpCircle, hint: "Test card combinations", flag: "sphinxAdvanced" },
+      // { name: "Forge Lab", href: "/marketplace/forge-lab", icon: Upload, hint: "Upload .docx → HIVE pre-check", flag: "forgeLabDocx" },
+      // { name: "Training Providers", href: "/training", icon: GraduationCap, hint: "JST-matched certifications", flag: "trainingProviders" },
     ],
   },
-  {
-    label: "Match",
-    items: [
-      { name: "Talent Exchange", href: "/matchmaking", icon: Network, hint: "Verified job & team matching", flag: "matchmaking" },
-    ],
-  },
-  {
-    label: "Manage",
-    items: [
-      { name: "Workforce", href: "/enterprise", icon: Users, hint: "Org-wide view", flag: "enterpriseDashboard" },
-      { name: "Workforce Intelligence", href: "/workforce", icon: Building2, hint: "Import HR roster + ARK breakdowns", flag: "institutionWorkforce" },
-    ],
-  },
+  // ── Out of MVP scope (Talent Exchange) ──
+  // {
+  //   label: "Match",
+  //   items: [
+  //     { name: "Talent Exchange", href: "/matchmaking", icon: Network, hint: "Verified job & team matching", flag: "matchmaking" },
+  //   ],
+  // },
+  // ── Out of MVP scope (Workforce / Enterprise) ──
+  // {
+  //   label: "Manage",
+  //   items: [
+  //     { name: "Workforce", href: "/enterprise", icon: Users, hint: "Org-wide view", flag: "enterpriseDashboard" },
+  //     { name: "Workforce Intelligence", href: "/workforce", icon: Building2, hint: "Import HR roster + ARK breakdowns", flag: "institutionWorkforce" },
+  //   ],
+  // },
 ];
 
 // Filter out items whose flag is off; drop groups that end up empty.
@@ -110,8 +113,9 @@ const NAV_GROUPS: NavGroup[] = ALL_NAV_GROUPS
 
 const ALL_SECONDARY_LINKS: FlaggedNavItem[] = [
   { name: "Profile", href: "/profile", icon: User, hint: "Account", flag: null },
-  { name: "Institution", href: "/school", icon: GraduationCap, hint: "School dashboard", flag: "cohorts" },
   { name: "Subscription", href: "/subscription", icon: CreditCard, hint: "Plans & billing", flag: null },
+  // ── Out of MVP scope (Institution / cohorts) ──
+  // { name: "Institution", href: "/school", icon: GraduationCap, hint: "School dashboard", flag: "cohorts" },
 ];
 
 const SECONDARY_LINKS: NavItem[] = ALL_SECONDARY_LINKS.filter(i => i.flag === null || FEATURES[i.flag]);
@@ -129,21 +133,21 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
   const { user } = useAuth();
   const isAdmin = !!(user as any)?.isAdmin;
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full w-full flex-col">
       <Link
-        href="/"
+        to="/dashboard"
         onClick={onNavigate}
         data-testid="link-logo-home"
-        className="p-6 flex items-center gap-3 hover:opacity-80 transition-opacity"
+        className="flex w-full items-center gap-3 border-b border-primary/15 px-4 py-4 hover:bg-primary/5 transition-colors"
       >
-        <Activity className="h-8 w-8 text-primary animate-pulse" />
-        <div>
-          <h1 className="text-xl font-display font-bold text-primary tracking-widest leading-none">ARK</h1>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-mono">Synthesized Intel</p>
+        <Activity className="h-7 w-7 shrink-0 text-primary animate-pulse" />
+        <div className="min-w-0">
+          <p className="text-lg font-sans font-bold text-primary tracking-tight leading-none">ARK</p>
+          <p className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground font-mono">Career intelligence</p>
         </div>
       </Link>
 
-      <nav className="px-4 py-4 flex-1 overflow-y-auto" aria-label="Primary">
+      <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Primary">
         {NAV_GROUPS.map((group) => (
           <div key={group.label} className="mb-5">
             <p className="px-2 mb-2 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/70">
@@ -155,19 +159,19 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
                 return (
                   <li key={item.name}>
                     <Link
-                      href={item.href}
+                      to={item.href}
                       onClick={onNavigate}
                       data-testid={`link-nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                       title={item.hint}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group font-mono text-sm uppercase tracking-wide",
+                        "flex w-full items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group font-mono text-sm uppercase tracking-wide",
                         isActive
                           ? "bg-primary/10 text-primary border border-primary/30 shadow-[0_0_15px_rgba(0,0,0,0.5)]"
                           : "text-muted-foreground hover:bg-white/5 hover:text-foreground border border-transparent"
                       )}
                     >
                       <item.icon className={cn(
-                        "h-4 w-4 flex-shrink-0 transition-colors",
+                        "h-4 w-4 shrink-0 transition-colors",
                         isActive ? "text-primary" : "opacity-70 group-hover:opacity-100 group-hover:text-primary/70"
                       )} />
                       <span className="truncate">{item.name}</span>
@@ -190,19 +194,19 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
                 return (
                   <li key={item.name}>
                     <Link
-                      href={item.href}
+                      to={item.href}
                       onClick={onNavigate}
                       data-testid={`link-admin-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                       title={item.hint}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 font-mono text-xs uppercase tracking-wide group border",
+                        "flex w-full items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 font-mono text-xs uppercase tracking-wide group border",
                         isActive
                           ? "bg-amber-400/10 text-amber-300 border-amber-400/30"
                           : "text-muted-foreground hover:bg-white/5 hover:text-amber-300 border-transparent"
                       )}
                     >
                       <item.icon className={cn(
-                        "h-4 w-4 flex-shrink-0",
+                        "h-4 w-4 shrink-0",
                         isActive ? "text-amber-300" : "opacity-70 group-hover:opacity-100"
                       )} />
                       <span className="truncate">{item.name}</span>
@@ -224,19 +228,19 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
               return (
                 <li key={item.name}>
                   <Link
-                    href={item.href}
+                    to={item.href}
                     onClick={onNavigate}
                     data-testid={`link-${item.name.toLowerCase()}`}
                     title={item.hint}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 font-mono text-xs uppercase tracking-wide group border",
+                      "flex w-full items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 font-mono text-xs uppercase tracking-wide group border",
                       isActive
                         ? "bg-primary/10 text-primary border-primary/30"
                         : "text-muted-foreground hover:bg-white/5 hover:text-foreground border-transparent"
                     )}
                   >
                     <item.icon className={cn(
-                      "h-4 w-4 flex-shrink-0",
+                      "h-4 w-4 shrink-0",
                       isActive ? "text-primary" : "opacity-70 group-hover:opacity-100"
                     )} />
                     <span className="truncate">{item.name}</span>
@@ -261,31 +265,31 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
         </div>
       </nav>
 
-      <div className="p-4 border-t border-primary/20 bg-background/80 backdrop-blur-sm space-y-3">
-        <button
-          type="button"
-          onClick={() => { openTour(); onNavigate?.(); }}
-          data-testid="button-launch-onboarding"
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-[11px] font-mono uppercase tracking-widest text-muted-foreground hover:text-primary hover:bg-primary/5 border border-transparent hover:border-primary/30 transition-all duration-300 group"
-        >
-          <HelpCircle className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100" />
-          <span>Take the tour</span>
-        </button>
-        <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
-          <span>SYS.STATUS</span>
-          <span className="text-secondary flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-            ONLINE
-          </span>
+      <div className="flex items-center justify-between gap-2 border-t border-primary/15 bg-background/80 px-3 py-2.5 backdrop-blur-sm">
+        <div className="flex min-w-0 items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-secondary animate-pulse" aria-hidden="true" />
+          <span className="truncate">System online</span>
         </div>
-        <div className="flex flex-col items-center gap-2 pt-3 border-t border-white/5">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 font-mono">Powered By</span>
-          <img
-            src={atandaLogo}
-            alt="Atanda"
-            data-testid="img-powered-by-atanda"
-            className="h-24 w-auto object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.18)] hover:scale-[1.04] transition-transform"
-          />
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => { openTour(); onNavigate?.(); }}
+            data-testid="button-launch-onboarding"
+            aria-label="Start product tour"
+            title="Take the tour"
+            className="flex h-11 w-11 items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </button>
+          <div className="flex items-center gap-1.5" title="Powered by Atanda">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60">By</span>
+            <img
+              src={atandaLogo}
+              alt="Atanda"
+              data-testid="img-powered-by-atanda"
+              className="h-6 w-auto object-contain opacity-80"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -293,17 +297,17 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const [location] = useLocation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { isOpen, open, close } = useOnboarding();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { user, logout } = useAuth();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
 
   const handleLogout = useCallback(async () => {
     await logout();
-    setLocation("/");
-  }, [logout, setLocation]);
+    navigate("/");
+  }, [logout, navigate]);
   // Pick a single bell mount per viewport — render only one component so we
   // never double-subscribe to the notification stream or display divergent
   // unread counters on the desktop layout.
@@ -331,17 +335,19 @@ export function AppLayout({ children }: AppLayoutProps) {
   // otherwise we'd open a doomed EventSource against a flagged-off endpoint.
   useNotificationStream(!!user?.id && FEATURES.notifications, undefined, onSeat);
 
-  if (location === '/' || location === '/login' || location === '/signup') {
+  const pathname = location.pathname;
+
+  if (pathname === '/' || pathname === '/login' || pathname === '/signup') {
     return <main className="min-h-screen bg-background text-foreground font-sans">{children}</main>;
   }
 
   return (
-    <div className="min-h-screen flex flex-col sm:flex-row bg-background">
+    <div className="h-screen flex flex-col sm:flex-row bg-background overflow-hidden">
       {/* Mobile top bar (< md): hamburger drawer */}
       <header className="sm:hidden sticky top-0 z-30 flex items-center justify-between pb-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-[calc(0.75rem+env(safe-area-inset-top))] border-b border-primary/20 bg-background/90 backdrop-blur-md">
-        <Link href="/" data-testid="link-logo-home-mobile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <Link to="/dashboard" data-testid="link-logo-home-mobile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <Activity className="h-6 w-6 text-primary animate-pulse" />
-          <span className="font-display font-bold text-primary tracking-widest text-sm">ARK</span>
+          <span className="font-sans font-bold text-primary tracking-tight text-sm">ARK</span>
         </Link>
         <div className="flex items-center gap-2">
           {isMobile && FEATURES.notifications && <NotificationBell />}
@@ -357,20 +363,21 @@ export function AppLayout({ children }: AppLayoutProps) {
             </button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-[280px] glass border-primary/20">
-            <SidebarBody location={location} openTour={open} onNavigate={() => setMobileNavOpen(false)} onLogout={handleLogout} />
+        <SidebarBody location={pathname} openTour={open} onNavigate={() => setMobileNavOpen(false)} onLogout={handleLogout} />
           </SheetContent>
         </Sheet>
         </div>
       </header>
 
       {/* Desktop sidebar (>= md) */}
-      <aside className="hidden sm:flex sm:w-56 md:w-64 lg:w-72 glass border-r border-primary/20 flex-shrink-0 z-10 sticky top-0 h-screen">
-        <SidebarBody location={location} openTour={open} onLogout={handleLogout} />
+      <aside className="hidden sm:flex sm:w-56 glass border-r border-primary/20 shrink-0 z-10 sticky top-0 h-screen">
+        <SidebarBody location={pathname} openTour={open} onLogout={handleLogout} />
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 relative overflow-x-hidden">
+      <main className="flex-1 flex flex-col relative overflow-y-auto overflow-x-hidden min-h-0">
         <AiBudgetBanner />
+        {user?.isVerified === false && <EmailVerificationBanner email={user.email} />}
         {/* Desktop floating bell (>= sm) — sits in the top-right of the main column. */}
         {!isMobile && FEATURES.notifications && (
           <div className="hidden sm:flex absolute top-4 right-4 z-30">
@@ -381,10 +388,10 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-destructive/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/3 pointer-events-none" />
 
-        <div className="relative z-10 p-4 sm:p-6 md:p-10 h-full">
+        <div className="relative z-10 p-4 sm:p-6 md:p-10 flex-1">
           {children}
         </div>
-        <footer className="relative z-10 border-t border-primary/10 px-4 sm:px-6 md:px-10 py-4 mt-auto">
+        <footer className="relative z-10 border-t border-primary/10 px-4 sm:px-6 md:px-10 py-4 mt-auto shrink-0">
           <div className="flex flex-wrap items-center justify-between gap-3 text-[11px] font-mono uppercase tracking-widest text-muted-foreground/70">
             <span>© 2026 ARK Platform</span>
             <div className="flex items-center gap-4">
@@ -396,8 +403,8 @@ export function AppLayout({ children }: AppLayoutProps) {
               >
                 Tour
               </button>
-              <Link href="/privacy" data-testid="link-privacy" className="hover:text-primary transition-colors">Privacy</Link>
-              <Link href="/terms" data-testid="link-terms" className="hover:text-primary transition-colors">Terms</Link>
+              <Link to="/privacy" data-testid="link-privacy" className="hover:text-primary transition-colors">Privacy</Link>
+              <Link to="/terms" data-testid="link-terms" className="hover:text-primary transition-colors">Terms</Link>
             </div>
           </div>
         </footer>

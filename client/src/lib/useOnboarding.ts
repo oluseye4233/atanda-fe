@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "./useAuth";
 
-const STORAGE_PREFIX = "ark.onboarding.completed.";
+// The durable "has this account ever completed a session" signal is the
+// backend's `lastLogin` field on the User object — it is `null` only until
+// the account's *next* login, at which point the server sets it and this
+// tour never auto-opens again for that account, on any device or browser.
+// This sessionStorage guard is a lightweight, session-scoped supplement: it
+// only prevents the tour from reopening on an in-session refresh/navigation
+// *before* that next login happens (sessionStorage clears with the tab, so
+// it never outlives the session it was set in).
+const SESSION_DISMISSED_PREFIX = "ark.onboarding.dismissed.";
 
-function storageKey(userId: string | undefined | null) {
-  return userId ? `${STORAGE_PREFIX}${userId}` : null;
+function sessionKey(userId: string | undefined | null) {
+  return userId ? `${SESSION_DISMISSED_PREFIX}${userId}` : null;
 }
 
 export function useOnboarding() {
@@ -27,18 +35,18 @@ export function useOnboarding() {
       setIsOpen(false);
       openedForUserId.current = null;
     }
-    const key = storageKey(user.id);
-    if (!key) return;
+    // Only accounts that have never logged in before (lastLogin still null)
+    // are candidates for the auto-opened tour.
+    if (user.lastLogin !== null) return;
+    const key = sessionKey(user.id);
     try {
-      const seen = localStorage.getItem(key);
-      if (!seen) {
-        setIsOpen(true);
-        openedForUserId.current = user.id;
-      }
+      if (key && sessionStorage.getItem(key)) return; // already dismissed this session
     } catch {
-      // localStorage unavailable (private mode, SSR, quota) — never auto-open.
+      // sessionStorage unavailable (private mode, quota) — fall through and open.
     }
-  }, [isAuthenticated, user?.id]);
+    setIsOpen(true);
+    openedForUserId.current = user.id;
+  }, [isAuthenticated, user?.id, user?.lastLogin]);
 
   const open = useCallback(() => {
     if (!user?.id) return;
@@ -51,24 +59,13 @@ export function useOnboarding() {
     const targetUserId = openedForUserId.current;
     openedForUserId.current = null;
     if (!markCompleted || !targetUserId) return;
-    const key = storageKey(targetUserId);
-    if (!key) return;
+    const key = sessionKey(targetUserId);
     try {
-      localStorage.setItem(key, new Date().toISOString());
+      if (key) sessionStorage.setItem(key, "1");
     } catch {
       // ignore — best-effort persistence
     }
   }, []);
 
-  const reset = useCallback(() => {
-    const key = storageKey(user?.id);
-    if (!key) return;
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      // ignore
-    }
-  }, [user?.id]);
-
-  return { isOpen, open, close, reset };
+  return { isOpen, open, close };
 }

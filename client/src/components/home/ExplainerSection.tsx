@@ -1,4 +1,5 @@
 import { Upload, BarChart3, Compass } from "lucide-react";
+import { motion } from "framer-motion";
 
 const steps = [
   {
@@ -38,16 +39,20 @@ export function ExplainerSection() {
         }}
       />
 
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Explainer copy */}
-        <div className="mb-16">
-          <h2 className="font-sans font-bold text-2xl sm:text-3xl text-white mb-6 tracking-tight max-w-2xl mx-auto">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-3 py-1 text-[11px] font-mono tracking-widest text-muted-foreground uppercase mb-5">
-              How it works
-            </span> <br />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-16"
+        >
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-3 py-1 text-[11px] font-mono tracking-widest text-muted-foreground uppercase mb-4">
+            How it works
+          </span>
+          <h2 className="font-sans font-bold text-3xl sm:text-4xl lg:text-5xl text-white mb-6 tracking-tight max-w-3xl mx-auto leading-[1.1]">
             From a CV to a career strategy in under a minute
           </h2>
-          <div className="space-y-4 text-muted-foreground leading-relaxed text-sm md:text-base max-w-2xl mx-auto">
+          <div className="space-y-4 text-muted-foreground leading-relaxed text-base md:text-lg max-w-3xl mx-auto">
             <p>
               ARK reads your CV the way a sharp career strategist would; not as
               a list of past jobs, but as a portfolio of skills, each with its
@@ -63,10 +68,15 @@ export function ExplainerSection() {
               commit to it.
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Horizontal timeline */}
-        <div className="relative">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="relative"
+        >
           <div
             aria-hidden="true"
             className="hidden lg:block absolute top-8 left-[16.6%] right-[16.6%] h-px bg-linear-to-r from-white/10 via-primary/40 to-white/10 z-0"
@@ -74,8 +84,11 @@ export function ExplainerSection() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-8 relative z-10">
             {steps.map(({ n, icon: Icon, title, body }) => (
-              <div
+              <motion.div
                 key={n}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + parseInt(n) * 0.1 }}
                 className="group flex flex-col items-center text-center"
                 data-testid={`landing-step-${n}`}
               >
@@ -95,10 +108,10 @@ export function ExplainerSection() {
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-[260px]">
                   {body}
                 </p>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

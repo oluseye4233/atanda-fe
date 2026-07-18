@@ -1,24 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
-
-type AiStatus = {
-  available: boolean;
-  plan: string;
-  guardrailActive: boolean;
-  ratioPct: number;
-  upgradeAtPct: 80;
-  hardStopAtPct: 100;
-  usage: { total: number; costCents: number };
-  caps: { tokenCap: number; costCapCents: number };
-  remaining: { tokens: number; costCents: number };
-};
+import { useSubscription } from "@/lib/useSubscription";
+import { aiService } from "@/services/ai.service";
+import type { AiStatus } from "@/types/ai";
 
 export function AiBudgetBanner() {
   const { user } = useAuth();
-  const { data } = useQuery<AiStatus>({
-    queryKey: ["/api/ai/status"],
+  const { plan } = useSubscription();
+  const { data } = useQuery<AiStatus | null>({
+    queryKey: ["ai", "status"],
+    queryFn: async () => {
+      try {
+        return (await aiService.getStatus()).data;
+      } catch {
+        return null;
+      }
+    },
     enabled: !!user,
     refetchInterval: 60_000,
   });
@@ -27,7 +26,7 @@ export function AiBudgetBanner() {
   if (data.ratioPct < data.upgradeAtPct) return null;
 
   const hardStop = data.ratioPct >= data.hardStopAtPct;
-  const ctaHref = data.plan === "ENTERPRISE" ? "/contact" : "/subscription";
+  const ctaHref = plan === "ENTERPRISE" ? "/contact" : "/subscription";
 
   return (
     <div
@@ -47,12 +46,12 @@ export function AiBudgetBanner() {
           )}
           <span data-testid="text-ai-budget-message">
             {hardStop
-              ? `AI cap reached — ${data.ratioPct}% of your ${data.plan.replace("_", " ").toLowerCase()} budget consumed.`
+              ? `AI cap reached — ${data.ratioPct}% of your ${plan.replace("_", " ").toLowerCase()} budget consumed.`
               : `${data.ratioPct}% of your AI budget used. Upgrade to keep generating.`}
           </span>
         </div>
         <Link
-          href={ctaHref}
+          to={ctaHref}
           className={
             hardStop
               ? "rounded bg-destructive px-3 py-1 text-xs font-semibold text-white hover:bg-destructive/80"
@@ -60,7 +59,7 @@ export function AiBudgetBanner() {
           }
           data-testid="link-ai-budget-upgrade"
         >
-          {data.plan === "ENTERPRISE" ? "Contact sales" : "Upgrade plan"}
+          {plan === "ENTERPRISE" ? "Contact sales" : "Upgrade plan"}
         </Link>
       </div>
     </div>

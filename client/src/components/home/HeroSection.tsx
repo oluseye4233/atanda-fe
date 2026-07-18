@@ -1,6 +1,6 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Upload, Sparkles } from "lucide-react";
+import { ArrowRight, Upload, LogIn } from "lucide-react";
 import { AsciiField } from "./AsciiField";
 
 const fadeUp = {
@@ -64,7 +64,7 @@ export function HeroSection() {
             className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-3 shrink-0"
           >
             <Link
-              href="/upload"
+              to="/signup"
               data-testid="button-hero-upload"
               className="group inline-flex items-center justify-center gap-2 h-11 px-7 rounded-md bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 hover:-translate-y-0.5 transition-all duration-200"
               style={{
@@ -76,11 +76,12 @@ export function HeroSection() {
               Analyze My CV
             </Link>
             <Link
-              href="/demo-tour"
-              data-testid="button-hero-demo"
+              to="/login"
+              data-testid="button-hero-login"
               className="group inline-flex items-center justify-center gap-2 h-11 px-7 rounded-md border border-white/20 text-sm text-muted-foreground hover:border-white/35 hover:text-foreground hover:bg-white/4 transition-all duration-200"
             >
-              See the Demo Tour
+              <LogIn className="h-4 w-4" />
+              Sign In
               <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           </motion.div>

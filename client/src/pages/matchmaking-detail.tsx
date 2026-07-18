@@ -1,4 +1,4 @@
-import { Link, useParams } from "wouter";
+import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Network,
@@ -152,7 +152,7 @@ export default function MatchmakingDetailPage() {
     return (
       <div className="mx-auto max-w-2xl p-8 text-center text-muted-foreground" data-testid="text-not-found">
         Opportunity not found.{" "}
-        <Link href="/matchmaking" className="text-cyan-400 underline">Back to exchange</Link>
+        <Link to="/matchmaking" className="text-cyan-400 underline">Back to exchange</Link>
       </div>
     );
   }
@@ -161,7 +161,7 @@ export default function MatchmakingDetailPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-8">
-      <Link href="/matchmaking" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-cyan-400" data-testid="link-back">
+      <Link to="/matchmaking" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-cyan-400" data-testid="link-back">
         <ArrowLeft className="h-4 w-4" /> Talent Exchange
       </Link>
 
@@ -274,12 +274,12 @@ export default function MatchmakingDetailPage() {
               </div>
             ))}
             <div className="flex gap-2 pt-2">
-              <Link href="/play">
+              <Link to="/play">
                 <Button size="sm" variant="outline" data-testid="button-go-play">
                   <Gamepad2 className="mr-2 h-4 w-4" /> Earn evidence in CCGE
                 </Button>
               </Link>
-              <Link href="/dashboard">
+              <Link to="/dashboard">
                 <Button size="sm" variant="outline" data-testid="button-go-verify">
                   <ShieldCheck className="mr-2 h-4 w-4" /> Verify primitives
                 </Button>

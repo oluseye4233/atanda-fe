@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function HomeTopNav() {
@@ -10,7 +10,7 @@ export function HomeTopNav() {
       data-testid="home-topnav"
     >
       <div className="flex items-center gap-3">
-        <Link href="/" className="font-display font-bold text-primary text-base tracking-widest hover:text-primary/90 transition-colors">
+        <Link to="/" className="font-display font-bold text-primary text-base tracking-widest hover:text-primary/90 transition-colors">
           ARK
         </Link>
         <span className="hidden sm:block h-3.5 w-px bg-white/15" />
@@ -23,14 +23,14 @@ export function HomeTopNav() {
         {!isLoading && !user && (
           <>
             <Link
-              href="/login"
+              to="/login"
               data-testid="button-landing-login"
               className="h-8 px-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-150 rounded-md"
             >
               Sign in
             </Link>
             <Link
-              href="/signup"
+              to="/signup"
               data-testid="button-landing-signup"
               className="h-8 px-4 inline-flex items-center rounded-md border border-white/15 text-sm text-foreground hover:border-white/30 hover:bg-white/6 hover:-translate-y-px transition-all duration-150"
               style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)" }}
@@ -41,7 +41,7 @@ export function HomeTopNav() {
         )}
         {!isLoading && user && (
           <Link
-            href="/dashboard"
+            to="/dashboard"
             data-testid="button-go-to-dashboard"
             className="h-8 px-4 inline-flex items-center rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 hover:-translate-y-px hover:shadow-[0_4px_16px_hsl(188_86%_53%/0.35)] transition-all duration-150"
             style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15)" }}

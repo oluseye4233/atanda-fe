@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { arkService } from "@/services/ark.service";
 
 // ── M3 — notification & roundtable SSE multiplexing ──────────────────
 // All consumers (dashboard, sidebar bell, toaster) share a single
@@ -143,7 +144,7 @@ function emit<T>(set: Set<Listener<T>>, v: T) {
 
 function connect() {
   if (hub.es) return;
-  const es = new EventSource("/api/ark-score/stream", { withCredentials: true });
+  const es = new EventSource(arkService.streamUrl(), { withCredentials: true });
   hub.es = es;
 
   es.addEventListener("ark.snapshot", (e: MessageEvent) => {

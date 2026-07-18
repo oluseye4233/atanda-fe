@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, Minus, ShieldAlert, ShieldCheck } from "lucide-react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 
 interface JSTGaugeProps {
   score: number;
@@ -288,7 +288,7 @@ export function JSTGauge({
       </div>
 
       {contextCraftLevel !== undefined && (
-        <Link href="/context-craft" className="w-full block mt-4" data-testid="link-cc-status">
+        <Link to="/context-craft" className="w-full block mt-4" data-testid="link-cc-status">
           <div
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer ${
               contextCraftLevel === "NONE"

@@ -1,5 +1,4 @@
-import { Link } from "wouter";
-import { FEATURES } from "@shared/featureFlags";
+import { Link } from "react-router-dom";
 
 export function HomeFooter() {
   return (
@@ -17,25 +16,26 @@ export function HomeFooter() {
         </div>
         <div className="flex items-center gap-5">
           <Link
-            href="/privacy"
+            to="/privacy"
             className="hover:text-muted-foreground transition-colors duration-150"
           >
             Privacy
           </Link>
           <Link
-            href="/terms"
+            to="/terms"
             className="hover:text-muted-foreground transition-colors duration-150"
           >
             Terms
           </Link>
+          {/* Out of MVP scope — investor demo route removed from the bundle.
           {FEATURES.investorDemo && (
             <Link
-              href="/demo"
+              to="/demo"
               className="hover:text-muted-foreground transition-colors duration-150"
             >
               Demo
             </Link>
-          )}
+          )} */}
         </div>
         <span>© 2026 ARK Platform</span>
       </div>

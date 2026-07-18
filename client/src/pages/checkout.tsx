@@ -1,75 +1,120 @@
-import { useEffect, useState } from "react";
-import { useLocation, useRoute } from "wouter";
+import { useState, useEffect } from "react";
+import { useMatch, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/useAuth";
-import { api } from "@/lib/api";
-import { SUBSCRIPTION_PLANS, type SubscriptionPlan } from "@shared/schema";
-import { CreditCard, Lock, X, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { getApiErrorMessage } from "@/lib/apiError";
+import { billingService, type CheckoutSession } from "@/services/billing.service";
+import { SUBSCRIPTION_PLANS } from "@shared/schema";
+import { CreditCard, Lock, X, CheckCircle2, AlertTriangle, Loader2, ArrowRight } from "lucide-react";
 
 type Step = "loading" | "form" | "processing" | "complete" | "failed" | "error";
-type Session = {
-  id: string;
-  userId: string;
-  plan: SubscriptionPlan;
-  amountCents: number;
-  status: string;
-  externalSessionId: string | null;
-  institution: string | null;
-};
 
 export default function CheckoutPage() {
-  const [, params] = useRoute("/checkout/:id");
-  const [, setLocation] = useLocation();
+  const match = useMatch("/checkout/:id");
+  const params = match?.params as { id: string } | undefined;
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { updateUser } = useAuth();
-  const [step, setStep] = useState<Step>("loading");
-  const [session, setSession] = useState<Session | null>(null);
+  const [step, setStep] = useState<Step>("form");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [cardNum, setCardNum] = useState("4242 4242 4242 4242");
   const [expiry, setExpiry] = useState("12/28");
   const [cvc, setCvc] = useState("123");
 
-  useEffect(() => {
-    if (!params?.id) return;
-    api.getCheckoutSession(params.id)
-      .then((s: Session) => {
-        setSession(s);
-        if (s.status === "completed") setStep("complete");
-        else if (s.status === "failed" || s.status === "canceled") setStep("failed");
-        else setStep("form");
-      })
-      .catch((e) => {
-        setErrorMsg(e.message || "Could not load checkout session.");
-        setStep("error");
-      });
-  }, [params?.id]);
+  const sessionIdFromUrl = searchParams.get("session_id");
+  const isReturnFromStripe = !!sessionIdFromUrl;
+
+  const checkoutQuery = useQuery({
+    queryKey: ["/v1/billing/checkout", params?.id],
+    queryFn: async (): Promise<CheckoutSession | null> => {
+      if (!params?.id) return null;
+      try {
+        const response = await billingService.getCheckoutSession(params.id);
+        return response.data;
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!params?.id && !isReturnFromStripe,
+    retry: false,
+  });
+
+  const session = checkoutQuery.data ?? null;
+  const initialStep: Step = isReturnFromStripe
+    ? "processing"
+    : checkoutQuery.isPending
+      ? "loading"
+      : !session
+        ? "error"
+        : session.status === "completed"
+          ? "complete"
+          : session.status === "failed" || session.status === "canceled"
+            ? "failed"
+            : "form";
+
+  const displayStep = step === "form" ? initialStep : step;
+  const checkoutError = checkoutQuery.isPending || session
+    ? errorMsg
+    : errorMsg ?? "Could not load checkout session. Please check your connection and try again.";
 
   const submit = async (success: boolean) => {
     if (!session) return;
     setStep("processing");
     setErrorMsg(null);
-    await new Promise((r) => setTimeout(r, success ? 1400 : 700));
+    await new Promise((resolve) => setTimeout(resolve, success ? 1400 : 700));
+
     try {
-      const r = await api.completeCheckout(session.id, success);
-      if (r.ok) {
+      const response = await billingService.completeCheckout(session.id, success);
+      if (response.data.ok) {
+        await billingService.completeCheckout(session.id, true);
         updateUser({
           subscriptionPlan: session.plan,
           subscriptionStatus: "active",
           ...(session.institution ? { institution: session.institution } : {}),
-        } as any);
+        });
         setStep("complete");
-        setTimeout(() => setLocation("/subscription"), 1600);
+        setTimeout(() => navigate("/subscription"), 1600);
       } else {
         setStep("failed");
       }
-    } catch (e: any) {
-      if (e.message?.toLowerCase().includes("payment failed")) {
+    } catch (error: unknown) {
+      const message = getApiErrorMessage(error, "Couldn't complete checkout. Please try again.");
+      if (message.toLowerCase().includes("payment failed")) {
         setStep("failed");
       } else {
-        setErrorMsg(e.message || "Checkout failed.");
+        setErrorMsg(message);
         setStep("error");
       }
     }
   };
+
+  useEffect(() => {
+    if (isReturnFromStripe && sessionIdFromUrl) {
+      const completeCheckout = async () => {
+        setStep("processing");
+        try {
+          const response = await billingService.completeCheckout(sessionIdFromUrl, true);
+          if (response.data.ok) {
+            const sessionResponse = await billingService.getCheckoutSession(sessionIdFromUrl);
+            const sessionData = sessionResponse.data;
+            updateUser({
+              subscriptionPlan: sessionData.plan,
+              subscriptionStatus: "active",
+              ...(sessionData.institution ? { institution: sessionData.institution } : {}),
+            });
+            setStep("complete");
+            setTimeout(() => navigate("/subscription"), 1600);
+          } else {
+            setStep("failed");
+          }
+        } catch {
+          setStep("failed");
+        }
+      };
+      completeCheckout();
+    }
+  }, [isReturnFromStripe, sessionIdFromUrl, navigate, updateUser]);
 
   const planData = session ? SUBSCRIPTION_PLANS[session.plan] : null;
   const dollars = session ? (session.amountCents / 100).toFixed(2) : "0.00";
@@ -82,19 +127,19 @@ export default function CheckoutPage() {
         className="glass-card rounded-2xl w-full max-w-md overflow-hidden"
         data-testid="page-checkout"
       >
-        {step === "loading" && (
+        {displayStep === "loading" && (
           <div className="p-12 flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 text-primary animate-spin" />
             <p className="font-mono text-sm text-muted-foreground uppercase tracking-widest">Loading checkout</p>
           </div>
         )}
 
-        {step === "error" && (
+        {displayStep === "error" && (
           <div className="p-8 space-y-4 text-center">
             <AlertTriangle className="h-10 w-10 text-destructive mx-auto" />
-            <p className="font-display font-bold text-white uppercase tracking-wide" data-testid="text-checkout-error">{errorMsg}</p>
+            <p className="font-display font-bold text-white uppercase tracking-wide" data-testid="text-checkout-error">{checkoutError}</p>
             <button
-              onClick={() => setLocation("/subscription")}
+              onClick={() => navigate("/subscription")}
               className="px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wide border border-white/20 text-white hover:bg-white/10"
               data-testid="button-back-to-plans"
             >
@@ -103,14 +148,14 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {step === "form" && session && planData && (
+        {displayStep === "form" && session && planData && (
           <div className="p-8 space-y-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <CreditCard className="h-6 w-6 text-primary" />
                 <h3 className="font-display font-bold text-xl text-white uppercase tracking-wider" data-testid="text-checkout-title">Checkout</h3>
               </div>
-              <button onClick={() => setLocation("/subscription")} className="text-muted-foreground hover:text-white" data-testid="button-close-checkout">
+              <button onClick={() => navigate("/subscription")} className="text-muted-foreground hover:text-white" data-testid="button-close-checkout">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -168,7 +213,13 @@ export default function CheckoutPage() {
 
             <div className="space-y-2">
               <button
-                onClick={() => submit(true)}
+                onClick={() => {
+                  if (session.redirectUrl) {
+                    window.location.href = session.redirectUrl;
+                  } else {
+                    submit(true);
+                  }
+                }}
                 className="w-full py-4 rounded-xl font-mono text-sm uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
                 data-testid="button-pay"
               >
@@ -190,7 +241,7 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {step === "processing" && (
+        {displayStep === "processing" && (
           <div className="p-12 flex flex-col items-center justify-center space-y-4" data-testid="state-processing">
             <div className="relative w-16 h-16">
               <div className="absolute inset-0 border-2 border-primary/20 rounded-full" />
@@ -201,7 +252,7 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {step === "complete" && (
+        {displayStep === "complete" && (
           <div className="p-12 flex flex-col items-center justify-center space-y-4" data-testid="state-complete">
             <motion.div
               initial={{ scale: 0 }}
@@ -216,7 +267,7 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {step === "failed" && (
+        {displayStep === "failed" && (
           <div className="p-12 flex flex-col items-center justify-center space-y-4" data-testid="state-failed">
             <div className="w-16 h-16 rounded-full bg-destructive/20 border-2 border-destructive flex items-center justify-center">
               <AlertTriangle className="h-8 w-8 text-destructive" />
@@ -224,7 +275,7 @@ export default function CheckoutPage() {
             <p className="font-display font-bold text-white text-lg uppercase tracking-widest">Payment Failed</p>
             <p className="text-xs font-mono text-muted-foreground">Your card was declined (simulated).</p>
             <button
-              onClick={() => setLocation("/subscription")}
+              onClick={() => navigate("/subscription")}
               className="mt-2 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wide border border-white/20 text-white hover:bg-white/10"
               data-testid="button-back-after-failure"
             >

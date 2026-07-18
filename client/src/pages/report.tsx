@@ -1,13 +1,11 @@
 import { useEffect, useState, useRef, forwardRef } from "react";
-import { Loader2, FileText, FileImage, FileType2, Share2, Copy, Check, X } from "lucide-react";
+import { Loader2, FileText, FileImage, FileType2, UploadCloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/useAuth";
-import { api } from "@/lib/api";
-import { useSubscription } from "@/lib/useSubscription";
-import UpgradeGate from "@/components/UpgradeGate";
+import { useAuth } from "@/contexts/AuthContext";
+import { arkService } from "@/services/ark.service";
+import { resumeService } from "@/services/resume.service";
 import { reportFileStamp, adviserFileStamp, exportReportImage } from "@/lib/arkReportExport";
-import { isEmptyProfile } from "@shared/assessmentMerge";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { ATANDA, BRAND_BAR, Bar } from "@/lib/arkReportTheme";
 import { ArkAdviserSheet } from "@/pages/adviser-report";
 import atandaLogo from "@assets/WEB_LEARNING_SYSTEMS_(1920_x_1280_px)_(2)_1779729580194.png";
@@ -546,7 +544,6 @@ export const ArkReportSheet = forwardRef<HTMLDivElement, ArkReportSheetProps>(fu
 
 export default function ReportPage() {
   const { user } = useAuth();
-  const { canAccessReport } = useSubscription();
   const [assessment, setAssessment] = useState<any>(null);
   const [identity, setIdentity] = useState<any>(null);
   const [lhcs, setLhcs] = useState<any>(null);
@@ -555,23 +552,33 @@ export default function ReportPage() {
   const adviserRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<"report" | "adviser">("report");
   const [exporting, setExporting] = useState<null | "pdf" | "png" | "jpeg">(null);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [sharing, setSharing] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     Promise.all([
-      api.getLatestAssessment(user.id).catch(() => null),
-      api.getArkIdentity().catch(() => null),
-      api.getArkLhcs().catch(() => null),
+      resumeService.getLatest(user.id).then((r) => r.data).catch(() => null),
+      arkService.getIdentity().then((r) => r.data).catch(() => null),
+      arkService.getLhcs().then((r) => r.data).catch(() => null),
     ])
       .then(([a, id, l]) => {
+        if (cancelled) return;
         setAssessment(a);
-        setIdentity(id);
-        setLhcs(l || id?.lhcs || null);
+        // The report sheet reads identity.pillars (+ .tier) — derive them from
+        // the backend's ccmiPillars / ccmiTier so the CCMI block renders.
+        setIdentity(
+          id
+            ? { ...id, pillars: { ...id.ccmiPillars, tier: id.ccmiTier, composite: id.ccmi } }
+            : null,
+        );
+        setLhcs(l);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   // Both documents share the same fetched data, so each view exports the sheet
@@ -598,57 +605,6 @@ export default function ReportPage() {
   // below + the @media print rules in index.css).
   const handlePrint = () => window.print();
 
-  const handleShare = async () => {
-    setSharing(true);
-    try {
-      const { path } = await api.createReportShare();
-      const url = `${window.location.origin}${path}`;
-      setShareUrl(url);
-      try {
-        await navigator.clipboard.writeText(url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch {
-        /* clipboard may be blocked; the URL is still shown for manual copy */
-      }
-    } catch (err) {
-      console.error("Share failed:", err);
-    } finally {
-      setSharing(false);
-    }
-  };
-
-  const handleCopy = async () => {
-    if (!shareUrl) return;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* noop */
-    }
-  };
-
-  const handleRevoke = async () => {
-    setSharing(true);
-    try {
-      await api.revokeReportShare();
-      setShareUrl(null);
-    } catch (err) {
-      console.error("Revoke failed:", err);
-    } finally {
-      setSharing(false);
-    }
-  };
-
-  if (!canAccessReport) {
-    return (
-      <UpgradeGate featureName="ARK Report" requiredPlan="Individual Pro" hasAccess={false}>
-        <div />
-      </UpgradeGate>
-    );
-  }
-
   if (loading) {
     return (
       <div className="w-full max-w-4xl mx-auto min-h-[60vh] flex flex-col items-center justify-center">
@@ -660,29 +616,21 @@ export default function ReportPage() {
 
   if (!assessment && !identity) {
     return (
-      <div className="w-full max-w-4xl mx-auto min-h-[60vh] flex flex-col items-center justify-center">
-        <p className="font-mono text-sm text-muted-foreground uppercase">No assessment data found. Upload a CV first.</p>
-      </div>
-    );
-  }
-
-  // Empty-profile state: the user removed every contributed source, so the
-  // persisted assessment is an honest zeroed "no profile" row. Render an
-  // explicit empty state instead of a branded report full of floor-baseline
-  // zeros — there's nothing to export until a source is re-added.
-  if (assessment && isEmptyProfile(assessment.sourcesUsed, assessment.completeness)) {
-    return (
-      <div className="w-full max-w-4xl mx-auto min-h-[60vh] flex flex-col items-center justify-center text-center" data-testid="report-no-sources">
-        <h2 className="text-2xl font-display font-bold text-white mb-2">No sources to report on</h2>
-        <p className="text-sm text-muted-foreground font-sans max-w-md mb-6 leading-relaxed">
-          You've removed every source that fed your ARK profile, so there's nothing to summarise yet. Add a résumé, self-assessment or LinkedIn profile and your ARK Report will rebuild automatically.
+      <div className="w-full max-w-3xl mx-auto min-h-[60vh] flex flex-col items-center justify-center text-center" data-testid="report-empty">
+        <div className="h-14 w-14 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center mb-5">
+          <UploadCloud className="h-6 w-6 text-primary" />
+        </div>
+        <h2 className="text-2xl font-display font-bold text-white mb-2">No report yet</h2>
+        <p className="text-sm text-muted-foreground max-w-md mb-6 leading-relaxed">
+          Upload your CV to generate your branded, export-ready ARK Report. It packages
+          your scores, AI-vulnerability profile and career mobility into a shareable PDF.
         </p>
         <Link
-          href="/upload"
-          data-testid="button-report-add-source"
-          className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-mono uppercase tracking-wider px-6 py-3 text-sm font-medium rounded-md transition-all hover:scale-[1.02]"
+          to="/upload"
+          data-testid="button-report-upload"
+          className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-mono uppercase tracking-wider px-6 py-3 text-sm font-medium rounded-lg transition-all hover:-translate-y-0.5"
         >
-          Add a source
+          <UploadCloud className="h-4 w-4" /> Upload your CV
         </Link>
       </div>
     );
@@ -722,57 +670,15 @@ export default function ReportPage() {
           <p className="text-muted-foreground font-mono text-sm mt-1">
             {view === "adviser"
               ? "Plain-English guide to every metric · stays in sync with your ARK Report."
-              : "Share a live link or download a print-ready PDF — both include the Career Adviser sheet."}
+              : "Download a print-ready PDF — it includes the Career Adviser sheet too."}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button
-            onClick={handleShare}
-            disabled={sharing}
-            data-testid="button-share-report"
-            className="bg-primary text-primary-foreground border border-primary hover:bg-primary/90 font-mono uppercase tracking-widest text-xs"
-          >
-            {sharing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Share2 className="w-4 h-4 mr-2" />}
-            Share link
-          </Button>
           <Btn onClick={handlePrint} icon={FileText} label="Download PDF" busy={false} testId="button-export-pdf" />
           <Btn onClick={() => handleExportImage("png")} icon={FileImage} label="PNG" busy={exporting === "png"} testId="button-export-png" />
           <Btn onClick={() => handleExportImage("jpeg")} icon={FileType2} label="JPEG" busy={exporting === "jpeg"} testId="button-export-jpeg" />
         </div>
       </div>
-
-      {/* Shareable public link — anyone with the URL can view the report + adviser, no login. */}
-      {shareUrl && (
-        <div
-          className="print:hidden flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3"
-          data-testid="report-share-row"
-        >
-          <span className="font-mono text-[11px] uppercase tracking-widest text-primary shrink-0">Public link</span>
-          <input
-            readOnly
-            value={shareUrl}
-            data-testid="input-share-url"
-            onFocus={(e) => e.currentTarget.select()}
-            className="flex-1 min-w-[180px] bg-transparent border border-white/15 rounded px-3 py-1.5 font-mono text-xs text-white/90"
-          />
-          <Button
-            onClick={handleCopy}
-            data-testid="button-copy-share"
-            className="bg-primary/20 text-primary border border-primary/50 hover:bg-primary hover:text-primary-foreground font-mono uppercase tracking-widest text-xs"
-          >
-            {copied ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
-            {copied ? "Copied" : "Copy"}
-          </Button>
-          <Button
-            onClick={handleRevoke}
-            disabled={sharing}
-            data-testid="button-revoke-share"
-            className="bg-transparent text-muted-foreground border border-white/15 hover:border-destructive/60 hover:text-destructive font-mono uppercase tracking-widest text-xs"
-          >
-            <X className="w-4 h-4 mr-1" /> Revoke
-          </Button>
-        </div>
-      )}
 
       {/* Document switcher — the Career Adviser Report accompanies the ARK Report */}
       <div className="flex gap-2 print:hidden" data-testid="report-view-toggle">

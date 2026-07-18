@@ -2,8 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, FileText, FileImage, FileType2, Upload, Lock, X, ShieldCheck, Clock, ShieldX, HelpCircle, Mail, Send, Copy, Check, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/useAuth";
-import { api } from "@/lib/api";
-import { Link } from "wouter";
+import { getApiErrorMessage } from "@/lib/apiError";
+import {
+  arkResumeService,
+  type ArkResume,
+  type ArkResumeConfirmation,
+  type ArkResumeStandardsMappings,
+  type ConfirmationClaimType,
+  type ConfirmationInvite,
+} from "@/services/ark-resume.service";
+import { Link } from "react-router-dom";
 import { ATANDA, BRAND_BAR, Bar } from "@/lib/arkReportTheme";
 import {
   resumeFileStamp,
@@ -117,7 +125,7 @@ function TierChip({ tier }: { tier: string | null }) {
 // Concise O*NET / WEF / SFIA standards labels for a mapped Primitive Card. Takes
 // the first label from each framework so the living layer is explicitly tied to
 // recognized skill standards (a core ARK RESUME requirement).
-function standardsLabels(mappings: any, max = 3): string[] {
+function standardsLabels(mappings: ArkResumeStandardsMappings | null | undefined, max = 3): string[] {
   if (!mappings) return [];
   const out: string[] = [];
   if (mappings.onet?.[0]) out.push(`O*NET: ${mappings.onet[0]}`);
@@ -128,7 +136,7 @@ function standardsLabels(mappings: any, max = 3): string[] {
 
 export default function ArkResumePage() {
   const { user } = useAuth();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<ArkResume | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<null | "pdf" | "png" | "jpeg">(null);
@@ -137,9 +145,9 @@ export default function ArkResumePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Task #60 — external confirmation invites the candidate sends by email.
-  const [invites, setInvites] = useState<any[]>([]);
+  const [invites, setInvites] = useState<ConfirmationInvite[]>([]);
   const [inviteClaim, setInviteClaim] = useState<null | {
-    type: "EMPLOYMENT" | "CERTIFICATION" | "SKILL";
+    type: ConfirmationClaimType;
     targetRef: string;
     targetLabel: string;
   }>(null);
@@ -160,20 +168,20 @@ export default function ArkResumePage() {
 
   const load = () => {
     setLoading(true);
-    api
-      .getArkResume()
-      .then((d) => {
-        setData(d);
+    arkResumeService
+      .getResume()
+      .then(({ data: resume }) => {
+        setData(resume);
         setError(null);
       })
-      .catch((e: Error) => setError(e.message))
+      .catch((err: unknown) => setError(getApiErrorMessage(err, "Unable to load your ARK Resume.")))
       .finally(() => setLoading(false));
   };
 
   const loadInvites = () => {
-    api
+    arkResumeService
       .listConfirmationInvites()
-      .then((rows: any[]) => setInvites(rows))
+      .then(({ data: rows }) => setInvites(rows))
       .catch(() => setInvites([]));
   };
 
@@ -185,7 +193,7 @@ export default function ArkResumePage() {
   }, [user]);
 
   const openInvite = (claim: {
-    type: "EMPLOYMENT" | "CERTIFICATION" | "SKILL";
+    type: ConfirmationClaimType;
     targetRef: string;
     targetLabel: string;
   }) => {
@@ -206,7 +214,7 @@ export default function ArkResumePage() {
     setInviteSubmitting(true);
     setInviteError(null);
     try {
-      const res = await api.createConfirmationInvite({
+      const { data: res } = await arkResumeService.createConfirmationInvite({
         type: inviteClaim.type,
         targetRef: inviteClaim.targetRef,
         targetLabel: inviteClaim.targetLabel,
@@ -219,8 +227,8 @@ export default function ArkResumePage() {
       setInviteEmailSent(!!res.emailSent);
       setInviteEmailWarning(res.emailSent ? null : res.emailError || null);
       loadInvites();
-    } catch (e: any) {
-      setInviteError(e.message || "Could not create the invite.");
+    } catch (err: unknown) {
+      setInviteError(getApiErrorMessage(err, "Could not create the invite."));
     } finally {
       setInviteSubmitting(false);
     }
@@ -229,7 +237,7 @@ export default function ArkResumePage() {
   const revokeInvite = async (id: string) => {
     setInviteActionId(id);
     try {
-      await api.revokeConfirmationInvite(id);
+      await arkResumeService.revokeConfirmationInvite(id);
       loadInvites();
     } catch {
       /* surfaced via reload; row stays as-is on failure */
@@ -241,7 +249,7 @@ export default function ArkResumePage() {
   const resendInvite = async (id: string) => {
     setInviteActionId(id);
     try {
-      const res = await api.resendConfirmationInvite(id);
+      const { data: res } = await arkResumeService.resendConfirmationInvite(id);
       setResentLinks((prev) => ({ ...prev, [id]: `${window.location.origin}${res.path}` }));
       loadInvites();
     } catch {
@@ -274,40 +282,52 @@ export default function ArkResumePage() {
     }
   };
 
-  const toExportData = (): ResumeExportData => ({
-    name: data.user.name,
-    currentRole: data.identity.currentRole,
-    currentEmployer: data.identity.currentEmployer,
-    contactEmail: data.identity.contactEmail,
-    contactPhone: data.identity.contactPhone,
-    location: data.identity.location,
-    linkLinkedin: data.identity.linkLinkedin,
-    linkGithub: data.identity.linkGithub,
-    linkPortfolio: data.identity.linkPortfolio,
-    arkScore: data.user.arkScore,
-    jst: data.jst,
-    ats: { score: data.ats.score, band: data.ats.band },
-    verifiedDeck: data.verifiedDeck.map((c: any) => ({ name: c.name, tier: c.tier, category: c.category, standards: standardsLabels(c.mappings) })),
-    workHistory: data.workHistory.map((w: any) => ({
-      company: w.company,
-      role: w.role,
-      startDate: w.startDate,
-      endDate: w.endDate,
-      location: w.location,
-      highlights: w.highlights,
-      mappedCards: w.mappedCards.map((c: any) => ({ name: c.name, tier: c.tier, standards: standardsLabels(c.mappings) })),
-      confirmation: w.confirmation ? { status: w.confirmation.status, confirmerOrg: w.confirmation.confirmerOrg } : null,
+  const toExportData = (resume: ArkResume): ResumeExportData => ({
+    name: resume.user.name,
+    currentRole: resume.identity.currentRole,
+    currentEmployer: resume.identity.currentEmployer,
+    contactEmail: resume.identity.contactEmail,
+    contactPhone: resume.identity.contactPhone,
+    location: resume.identity.location,
+    linkLinkedin: resume.identity.linkLinkedin,
+    linkGithub: resume.identity.linkGithub,
+    linkPortfolio: resume.identity.linkPortfolio,
+    arkScore: resume.user.arkScore,
+    jst: resume.jst,
+    ats: { score: resume.ats.score, band: resume.ats.band },
+    verifiedDeck: resume.verifiedDeck.map((card) => ({
+      name: card.name,
+      tier: card.tier,
+      category: card.category,
+      standards: standardsLabels(card.mappings),
     })),
-    education: data.education,
-    certifications: data.certifications,
+    workHistory: resume.workHistory.map((work) => ({
+      company: work.company ?? "",
+      role: work.role,
+      startDate: work.startDate,
+      endDate: work.endDate,
+      location: work.location,
+      highlights: work.highlights,
+      mappedCards: work.mappedCards.map((card) => ({
+        name: card.name,
+        tier: card.tier,
+        standards: standardsLabels(card.mappings),
+      })),
+      confirmation: work.confirmation
+        ? { status: work.confirmation.status, confirmerOrg: work.confirmation.confirmerOrg }
+        : null,
+    })),
+    education: resume.education,
+    certifications: resume.certifications,
   });
 
   const handleExportPdf = async () => {
+    if (!data) return;
     setExporting("pdf");
     try {
-      await exportResumePdf(toExportData(), resumeFileStamp(data.user.name));
-    } catch (e) {
-      console.error("PDF export failed:", e);
+      await exportResumePdf(toExportData(data), resumeFileStamp(data.user.name));
+    } catch (err) {
+      console.error("PDF export failed:", err);
     } finally {
       setExporting(null);
     }
@@ -315,12 +335,12 @@ export default function ArkResumePage() {
 
   const handleExportImage = async (type: "png" | "jpeg") => {
     const el = sheetRef.current;
-    if (!el) return;
+    if (!el || !data) return;
     setExporting(type);
     try {
       await exportResumeImage(el, type, resumeFileStamp(data.user.name));
-    } catch (e) {
-      console.error("Image export failed:", e);
+    } catch (err) {
+      console.error("Image export failed:", err);
     } finally {
       setExporting(null);
     }
@@ -338,10 +358,10 @@ export default function ArkResumePage() {
       const dataUrl = String(reader.result);
       setUploadingHeadshot(true);
       try {
-        await api.setArkResumeHeadshot(dataUrl);
+        await arkResumeService.setHeadshot(dataUrl);
         load();
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(getApiErrorMessage(err, "Couldn't update your headshot. Please try again."));
       } finally {
         setUploadingHeadshot(false);
       }
@@ -352,10 +372,10 @@ export default function ArkResumePage() {
   const handleRemoveHeadshot = async () => {
     setUploadingHeadshot(true);
     try {
-      await api.deleteArkResumeHeadshot();
+      await arkResumeService.deleteHeadshot();
       load();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, "Couldn't remove your headshot. Please try again."));
     } finally {
       setUploadingHeadshot(false);
     }
@@ -381,10 +401,10 @@ export default function ArkResumePage() {
           {error || "Unable to load your ARK Resume."}
         </p>
         <div className="flex flex-wrap gap-3 justify-center">
-          <Link href="/subscription" className="inline-flex items-center justify-center bg-primary text-primary-foreground font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md" data-testid="link-upgrade">
+          <Link to="/subscription" className="inline-flex items-center justify-center bg-primary text-primary-foreground font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md" data-testid="link-upgrade">
             Upgrade Plan
           </Link>
-          <Link href="/dashboard" className="inline-flex items-center justify-center border border-primary/50 text-primary hover:bg-primary/10 font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md" data-testid="link-verify-cards">
+          <Link to="/dashboard" className="inline-flex items-center justify-center border border-primary/50 text-primary hover:bg-primary/10 font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md" data-testid="link-verify-cards">
             Verify a Primitive Card
           </Link>
         </div>
@@ -399,9 +419,9 @@ export default function ArkResumePage() {
   // comparison the server uses) so a badge issued against a reasonable variant of
   // a certification label still renders instead of silently orphaning. Missing →
   // rendered as "Unverified".
-  const allConfs = (data.confirmations ?? []) as any[];
-  const skillByKey = new Map<string, any>();
-  const certConfs: any[] = [];
+  const allConfs = data.confirmations ?? [];
+  const skillByKey = new Map<string, ArkResumeConfirmation>();
+  const certConfs: ArkResumeConfirmation[] = [];
   for (const c of allConfs) {
     if (c.type === "SKILL") skillByKey.set(String(c.targetRef).toLowerCase(), c);
     else if (c.type === "CERTIFICATION") certConfs.push(c);
@@ -413,7 +433,7 @@ export default function ArkResumePage() {
   // keyed exactly as that panel queries it: `${type}:${targetRef.toLowerCase()}`
   // — so a claim can show whether a request already resolved (the candidate's own
   // view; badge rendering uses the tolerant maps above).
-  const confByKey = new Map<string, any>();
+  const confByKey = new Map<string, ArkResumeConfirmation>();
   for (const c of allConfs) {
     confByKey.set(`${c.type}:${String(c.targetRef).toLowerCase()}`, c);
   }
@@ -539,9 +559,9 @@ export default function ArkResumePage() {
           </div>
 
           {/* ATS breakdown */}
-          {data.ats.items?.length > 0 && (
+          {data.ats.items && data.ats.items.length > 0 && (
             <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "4px 24px" }} data-testid="block-ats-breakdown">
-              {data.ats.items.map((it: any) => (
+              {data.ats.items.map((it) => (
                 <div key={it.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: ATANDA.sub }}>
                   <span>{it.label}</span>
                   <span style={{ fontWeight: 700, color: ATANDA.ink }}>{it.points}/{it.max}</span>
@@ -554,7 +574,7 @@ export default function ArkResumePage() {
           {data.verifiedDeck.length > 0 && (
             <Section title="Verified Skills & Roles">
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }} data-testid="block-verified-deck">
-                {data.verifiedDeck.map((c: any) => (
+                {data.verifiedDeck.map((c) => (
                   <div
                     key={c.cardId}
                     style={{ display: "flex", alignItems: "center", gap: 6, border: `1px solid ${ATANDA.line}`, borderRadius: 8, padding: "6px 10px" }}
@@ -581,7 +601,7 @@ export default function ArkResumePage() {
           {/* Experience — with per-company AI-mapped cards + confirmation */}
           {data.workHistory.length > 0 && (
             <Section title="Experience">
-              {data.workHistory.map((w: any, i: number) => (
+              {data.workHistory.map((w, i) => (
                 <div key={i} style={{ marginBottom: 14 }} data-testid={`block-work-${i}`}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
                     <div style={{ fontSize: 13, fontWeight: 700 }}>
@@ -601,16 +621,16 @@ export default function ArkResumePage() {
                       />
                     )}
                   </div>
-                  {(w.highlights ?? []).length > 0 && (
+                  {w.highlights && w.highlights.length > 0 && (
                     <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-                      {w.highlights.map((h: string, hi: number) => (
+                      {w.highlights.map((h, hi) => (
                         <li key={hi} style={{ fontSize: 11, lineHeight: 1.5, color: ATANDA.ink }}>{h}</li>
                       ))}
                     </ul>
                   )}
                   {w.mappedCards.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }} data-testid={`block-work-cards-${i}`}>
-                      {w.mappedCards.map((c: any) => (
+                      {w.mappedCards.map((c) => (
                         <span
                           key={c.cardId}
                           title={standardsLabels(c.mappings, 6).join(" · ")}
@@ -742,10 +762,10 @@ function ConfirmationRequests({
   copiedResentId,
   onCopyResent,
 }: {
-  data: any;
-  invites: any[];
-  confByKey: Map<string, any>;
-  onRequest: (claim: { type: "EMPLOYMENT" | "CERTIFICATION" | "SKILL"; targetRef: string; targetLabel: string }) => void;
+  data: ArkResume;
+  invites: ConfirmationInvite[];
+  confByKey: Map<string, ArkResumeConfirmation>;
+  onRequest: (claim: { type: ConfirmationClaimType; targetRef: string; targetLabel: string }) => void;
   onRevoke: (id: string) => void;
   onResend: (id: string) => void;
   actioningId: string | null;

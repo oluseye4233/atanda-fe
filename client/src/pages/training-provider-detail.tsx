@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "wouter";
+import { Link, useParams } from "react-router-dom";
 import {
   GraduationCap,
   Loader2,
@@ -117,7 +117,7 @@ export default function TrainingProviderDetailPage() {
           {error || "Provider not found."}
         </p>
         <Link
-          href="/training"
+          to="/training"
           className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-widest text-primary hover:text-primary/80"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Back to directory
@@ -129,7 +129,7 @@ export default function TrainingProviderDetailPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <Link
-        href="/training"
+        to="/training"
         data-testid="link-back-directory"
         className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-primary"
       >

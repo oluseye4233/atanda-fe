@@ -16,7 +16,7 @@ function FrontFaceContent({ card, variant, index, typeClass }: FrontFaceContentP
       <div className="flex justify-between items-start pr-9">
         <div className="flex items-center gap-2">
           <div className="text-3xl leading-none" aria-hidden>
-            {card.emoji}
+            {cardEmoji(card)}
           </div>
           {variant === "played" && typeof index === "number" && (
             <span className="text-xs font-mono opacity-70 px-1.5 py-0.5 rounded bg-black/20">
@@ -42,7 +42,7 @@ function FrontFaceContent({ card, variant, index, typeClass }: FrontFaceContentP
       </div>
 
       <div className="text-xs leading-snug opacity-90 flex-1">
-        {card.description}
+        {cardDescription(card)}
       </div>
 
       <div className="flex items-center justify-between text-[10px] font-mono pt-1 border-t border-current/20">
@@ -61,6 +61,10 @@ function FrontFaceContent({ card, variant, index, typeClass }: FrontFaceContentP
   );
 }
 
+// The real backend's CcgeCard (see LL_UI_INTEGERATION.md §11) has no `emoji`
+// or `description` field — those were assumptions from an earlier stub API.
+// Both are optional here and fall back to pillar-derived defaults so this
+// component still renders correctly against the documented contract.
 export interface CcgeCardData {
   id: string;
   name: string;
@@ -68,9 +72,32 @@ export interface CcgeCardData {
   type: string;
   baseKcse: number;
   tokenCost: number;
-  emoji: string;
-  description: string;
-  body: string;
+  emoji?: string;
+  description?: string;
+  body: string | null;
+}
+
+const PILLAR_EMOJI: Record<string, string> = {
+  System: "🖥️",
+  Role: "🎭",
+  Instruction: "📋",
+  Example: "💡",
+  Constraint: "🚧",
+  Format: "📐",
+  Data: "📊",
+  SuperPrompt: "⚡",
+};
+
+function cardEmoji(card: CcgeCardData): string {
+  return card.emoji ?? PILLAR_EMOJI[card.pillar] ?? "🃏";
+}
+
+function cardDescription(card: CcgeCardData): string {
+  if (card.description) return card.description;
+  if (!card.body) return `A ${card.pillar} card.`;
+  const trimmed = card.body.trim();
+  const preview = trimmed.slice(0, 90);
+  return preview.length < trimmed.length ? `${preview}…` : preview;
 }
 
 const PILLAR_COLORS: Record<string, string> = {
@@ -284,7 +311,7 @@ export function CcgeCard({
           </div>
 
           <pre className="flex-1 text-[11px] leading-relaxed text-foreground/90 font-mono whitespace-pre-wrap overflow-y-auto p-2.5 rounded bg-black/30 border border-primary/10 scrollbar-thin">
-{card.body}
+{card.body ?? "No prompt body on file for this card."}
           </pre>
 
           <div className="flex items-center justify-between text-[9px] font-mono pt-1 border-t border-primary/10 text-muted-foreground">
