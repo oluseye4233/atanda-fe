@@ -12,6 +12,7 @@ const PLAN_ICONS: Record<string, typeof User> = {
   ENTERPRISE: Building2,
 };
 
+// Order: Free (left) -> Explorer -> Pro -> Schools -> Institution (right)
 const PLAN_ORDER = [
   "INDIVIDUAL_FREE",
   "INDIVIDUAL_EXPLORER",
@@ -26,12 +27,22 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
   const isEnterprise = plan.title === "Institution";
   const isFree = plan.monthlyPrice === "0.00";
 
+  // Bento grid: 3 cards top row, 2 cards bottom row
+  // On xl: 3 columns, so indices 0,1,2 = top row, 3,4 = bottom row
+  const cardStyles = [
+    "xl:col-span-1", // Free
+    "xl:col-span-1", // Explorer
+    "xl:col-span-1", // Pro
+    "xl:col-span-1", // Schools
+    "xl:col-span-1", // Institution
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className={`glass-card rounded-2xl overflow-hidden flex flex-col relative ${
+      className={`glass-card rounded-2xl overflow-hidden flex flex-col relative ${cardStyles[index]} ${
         isPopular ? "ring-1 ring-primary/40" : ""
       } ${isEnterprise ? "ring-1 ring-secondary/40" : ""}`}
       style={isPopular ? { borderColor: "hsl(188 86% 53% / 0.3)" } : {}}
@@ -47,7 +58,10 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
         <div className="flex items-center gap-3 mb-4">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: `${isPopular ? "hsl(188 86% 53%)" : isEnterprise ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)"}15`, border: `1px solid ${isPopular ? "hsl(188 86% 53%)" : isEnterprise ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)"}30` }}
+            style={{
+              backgroundColor: `${isPopular ? "hsl(188 86% 53%)" : isEnterprise ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)"}15`,
+              border: `1px solid ${isPopular ? "hsl(188 86% 53%)" : isEnterprise ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)"}30`,
+            }}
           >
             <Icon className="h-5 w-5" style={{ color: isPopular ? "hsl(188 86% 53%)" : isEnterprise ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)" }} />
           </div>
@@ -85,8 +99,9 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
           {plan.description}
         </p>
 
+        {/* Show only top 4 features, rest in comparison table */}
         <div className="space-y-2.5 mb-6">
-          {plan.features.map((feature, i) => (
+          {plan.features.slice(0, 4).map((feature, i) => (
             <div key={i} className="flex items-start gap-2">
               <Check className="h-4 w-4 shrink-0 mt-0.5" style={{ color: isPopular ? "hsl(188 86% 53%)" : isEnterprise ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)" }} />
               <span className="text-sm text-muted-foreground">{feature}</span>
@@ -132,7 +147,7 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
 export function PricingSection() {
   const { data: plans, isLoading, error } = useQuery<Plan[]>({
     queryKey: ["/v1/plans/public"],
-    queryFn: () => plansService.getPublic().then(res => res.data),
+    queryFn: () => plansService.getPublic().then((res) => res.data),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -151,7 +166,7 @@ export function PricingSection() {
               Choose the plan that fits your career stage. All plans include core ARK intelligence.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {PLAN_ORDER.map((_, i) => (
               <motion.div
                 key={i}
@@ -225,14 +240,14 @@ export function PricingSection() {
           </p>
         </motion.div>
 
-        {/* Pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
+        {/* Pricing cards - Bento grid: 3 top, 2 bottom */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {sortedPlans.map((plan, index) => (
             <PricingCard key={plan.id} plan={plan} index={index} />
           ))}
         </div>
 
-        {/* Feature comparison table */}
+        {/* Feature comparison table - reverse order (Institution first) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -250,7 +265,8 @@ export function PricingSection() {
                   <th className="text-left py-3 pr-4 font-mono text-muted-foreground uppercase tracking-wide text-xs">
                     Feature
                   </th>
-                  {sortedPlans.map((plan) => (
+                  {/* Reverse order for table: Institution, Schools, Pro, Explorer, Free */}
+                  {[...sortedPlans].reverse().map((plan) => (
                     <th key={plan.id} className="py-3 px-2 text-center">
                       <span className="font-mono text-xs uppercase tracking-wide" style={{ color: plan.title === "Pro" ? "hsl(188 86% 53%)" : plan.title === "Institution" ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)" }}>
                         {plan.title}
@@ -261,16 +277,16 @@ export function PricingSection() {
               </thead>
               <tbody>
                 {[
-                  { feature: "Resume uploads", values: ["1/month", "Unlimited", "Unlimited", "Unlimited", "Unlimited"] },
+                  { feature: "Resume uploads", values: ["Unlimited", "Unlimited", "Unlimited", "Unlimited", "1/month"] },
                   { feature: "JST Score", values: [true, true, true, true, true] },
                   { feature: "Full Dashboard", values: [true, true, true, true, true] },
-                  { feature: "Career Pathways", values: [false, true, true, true, true] },
-                  { feature: "FORGE Cards", values: [false, true, true, true, true] },
-                  { feature: "Executive Report", values: [false, true, true, true, true] },
-                  { feature: "Context Craft (CCGE)", values: [false, true, true, true, true] },
-                  { feature: "Workforce Intelligence", values: [false, false, false, false, true] },
-                  { feature: "Institution Dashboard", values: [false, false, false, true, false] },
-                  { feature: "Priority Support", values: [false, false, false, false, true] },
+                  { feature: "Career Pathways", values: [true, true, true, true, false] },
+                  { feature: "FORGE Cards", values: [true, true, true, true, false] },
+                  { feature: "Executive Report", values: [true, true, true, true, false] },
+                  { feature: "Context Craft (CCGE)", values: [true, true, true, true, false] },
+                  { feature: "Workforce Intelligence", values: [true, false, false, false, false] },
+                  { feature: "Institution Dashboard", values: [false, true, false, false, false] },
+                  { feature: "Priority Support", values: [true, false, false, false, false] },
                 ].map((row, i) => (
                   <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                     <td className="py-3 pr-4 text-muted-foreground font-mono text-xs">{row.feature}</td>
@@ -278,7 +294,7 @@ export function PricingSection() {
                       <td key={j} className="py-3 px-2 text-center">
                         {typeof val === "boolean" ? (
                           val ? (
-                            <Check className="h-4 w-4 mx-auto" style={{ color: sortedPlans[j]?.title === "Pro" ? "hsl(188 86% 53%)" : sortedPlans[j]?.title === "Institution" ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)" }} />
+                            <Check className="h-4 w-4 mx-auto" style={{ color: [...sortedPlans].reverse()[j]?.title === "Pro" ? "hsl(188 86% 53%)" : [...sortedPlans].reverse()[j]?.title === "Institution" ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)" }} />
                           ) : (
                             <span className="text-muted-foreground/30">—</span>
                           )

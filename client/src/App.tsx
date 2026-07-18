@@ -21,6 +21,8 @@ import VerifyResetPage from "@/pages/auth/verify-reset";
 import ResetPasswordPage from "@/pages/auth/reset-password";
 import PrivacyPage from "@/pages/legal/privacy";
 import TermsPage from "@/pages/legal/terms";
+import PaymentSuccessPage from "@/pages/payments/success";
+import PaymentFailedPage from "@/pages/payments/failed";
 
 // ── Authenticated app — ONE lazy chunk, loaded on first protected navigation ──
 const AuthenticatedApp = lazy(() => import("@/app/AuthenticatedApp"));
@@ -37,15 +39,17 @@ function App() {
               <ScrollToTop />
               <Routes>
                 {/* ── Public — no sidebar, no auth ─────────────────────── */}
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/signup" element={<SignupPage />} />
-                <Route path="/verify-account" element={<VerifyAccountPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/verify-reset" element={<VerifyResetPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/privacy" element={<PrivacyPage />} />
-                <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/signup" element={<SignupPage />} />
+                  <Route path="/verify-account" element={<VerifyAccountPage />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/verify-reset" element={<VerifyResetPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/payments/success" element={<PaymentSuccessPage />} />
+                  <Route path="/payments/failed" element={<PaymentFailedPage />} />
 
                 {/* ── Everything else → the authenticated bundle ───────── */}
                 <Route

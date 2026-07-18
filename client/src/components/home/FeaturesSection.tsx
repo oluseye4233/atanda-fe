@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { motion } from "framer-motion";
 import { Zap, ShieldAlert, Target, Compass } from "lucide-react";
 
 function FeatureCard({
@@ -11,7 +12,9 @@ function FeatureCard({
   testid: string;
 }) {
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       className={`group relative rounded-2xl border border-white/7 bg-white/3 backdrop-blur-xl p-6 flex flex-col transition-all duration-300 hover:-translate-y-1 hover:border-white/14 hover:bg-white/5 ${className}`}
       style={{
         boxShadow:
@@ -20,7 +23,7 @@ function FeatureCard({
       data-testid={testid}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
@@ -30,18 +33,22 @@ export function FeaturesSection() {
       className="bg-[#0d1117] px-6 sm:px-10 py-24"
       data-testid="section-features"
     >
-      <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-14">
+      <div className="max-w-6xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-16"
+        >
           <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-3 py-1 text-[11px] font-mono tracking-widest text-muted-foreground uppercase mb-4">
             The Intelligence Layers
           </span>
-          <h2 className="font-sans font-bold text-2xl sm:text-3xl text-white mb-3 tracking-tight">
+          <h2 className="font-sans font-bold text-3xl sm:text-4xl lg:text-5xl text-white mb-4 tracking-tight">
             What ARK gives you
           </h2>
-          <p className="text-muted-foreground text-sm max-w-sm mx-auto leading-relaxed">
+          <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
             Three intelligence layers most career tools miss entirely.
           </p>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-fr">
           {/* JST Valuation — wide tile */}

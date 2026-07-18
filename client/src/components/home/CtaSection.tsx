@@ -232,7 +232,7 @@ export function CtaSection() {
             <h2 className="font-sans font-bold text-3xl sm:text-4xl lg:text-5xl text-white tracking-tight mb-5 leading-[1.1]">
               Ready to know where you stand?
             </h2>
-            <p className="text-muted-foreground text-base md:text-lg max-w-xl lg:mx-0 mx-auto leading-relaxed mb-8">
+            <p className="text-muted-foreground text-sm md:text-base max-w-xl lg:mx-0 mx-auto leading-relaxed mb-8">
               It&apos;s free to start. Upload your CV and get your full career
               intelligence report in under a minute — JST score, AI vulnerability
               readout, and ROI-ranked pivot pathways.
