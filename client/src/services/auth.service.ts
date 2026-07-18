@@ -23,8 +23,23 @@ export const authService = {
   verifyAccount: (body: VerifyOtpBody) =>
     apiClient.post<VerifyAccountResponse>("/auth/verify-account", body),
 
+  /**
+   * Resend verification code for UNAUTHENTICATED users (first-time registration).
+   * Endpoint: POST /auth/resend-code
+   * Requires: vsid cookie (set during signup)
+   * Response: { message: string, expiresInSeconds: number }
+   */
   resendCode: () =>
     apiClient.post<ResendCodeResponse>("/auth/resend-code"),
+
+  /**
+   * Resend verification code for AUTHENTICATED users (logged in but unverified).
+   * Endpoint: POST /auth/resend-code-auth
+   * Requires: session cookie
+   * Response: { message: string, expiresInSeconds: number }
+   */
+  resendCodeAuth: () =>
+    apiClient.post<ResendCodeResponse>("/auth/resend-code-auth"),
 
   login: (body: LoginBody) =>
     apiClient.post<AuthUser>("/auth/login", body),

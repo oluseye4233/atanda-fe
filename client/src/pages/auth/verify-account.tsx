@@ -14,8 +14,8 @@ export default function VerifyAccountPage() {
 
   const handleVerify = async (otp: string) => {
     await authService.verifyAccount({ otp });
-    // Verified — send them to sign in.
-    navigate("/login", { replace: true });
+    // Verified — send them to dashboard.
+    navigate("/dashboard", { replace: true });
   };
 
   const handleResend = async () => {

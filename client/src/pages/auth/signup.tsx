@@ -41,7 +41,11 @@ export default function SignupPage() {
       // Account created + OTP emailed (vsid cookie set). Move to verification.
       navigate("/verify-account", { state: { email } });
     } catch (err) {
-      setError(getApiErrorMessage(err, "Couldn't create your account. Please try again."));
+      if (err && typeof err === "object" && "response" in err && err.response && typeof err.response === "object" && "status" in err.response && err.response.status === 409) {
+        setError("An account with this email already exists. Please sign in instead.");
+      } else {
+        setError(getApiErrorMessage(err, "Couldn't create your account. Please try again."));
+      }
       setIsLoading(false);
     }
   };

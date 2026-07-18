@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LoaderCircle, MailCheck } from "lucide-react";
+import { LoaderCircle, MailCheck, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/apiError";
@@ -19,7 +19,7 @@ export function EmailVerificationBanner({ email }: EmailVerificationBannerProps)
 
     setIsRequestingCode(true);
     try {
-      const { data } = await authService.resendCode();
+      const { data } = await authService.resendCodeAuth();
       toast.success("Verification code sent", { description: data.message });
       navigate("/verify-account", { state: { email } });
     } catch (error) {
@@ -44,10 +44,11 @@ export function EmailVerificationBanner({ email }: EmailVerificationBannerProps)
             Verify your email to secure your ARK account
           </h2>
           <p className="mt-0.5 text-muted-foreground">
-            We’ll send a six-digit code to {email}.
+            We'll send a six-digit code to {email}.
           </p>
         </div>
       </div>
+
       <button
         type="button"
         onClick={() => void requestVerificationCode()}
@@ -61,7 +62,10 @@ export function EmailVerificationBanner({ email }: EmailVerificationBannerProps)
             Sending code…
           </>
         ) : (
-          "Verify email"
+          <>
+            Verify email
+            <ArrowRight className="h-4 w-4" />
+          </>
         )}
       </button>
     </section>

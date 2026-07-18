@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { authService } from "@/services/auth.service";
+import { subscriptionsService } from "@/services/subscriptions.service";
 import type { AuthUser } from "@/types/auth";
 
 export type { AuthUser };
@@ -24,14 +25,15 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const ME_KEY = ["/v1/auth/whoami"] as const;
+const ME_KEY = ["/auth/whoami"] as const;
+const SUBSCRIPTION_KEY = ["/subscriptions/me"] as const;
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
 
-  const { data: user, isLoading } = useQuery<AuthUser | null>({
+  const { data: user, isLoading: userLoading } = useQuery<AuthUser | null>({
     queryKey: ME_KEY,
     queryFn: async () => {
       try {
@@ -44,6 +46,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     staleTime: 1000 * 60,
     retry: false,
   });
+
+  // Fetch subscription data when user is authenticated
+  const { data: subscription, isLoading: subLoading } = useQuery({
+    queryKey: SUBSCRIPTION_KEY,
+    queryFn: async () => {
+      try {
+        const res = await subscriptionsService.getMine();
+        return res.data;
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60,
+    retry: false,
+  });
+
+  const isLoading = userLoading || (user && subLoading);
 
   const login = useCallback(
     (userData: AuthUser) => {
@@ -59,7 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // best-effort — clear local state regardless
     }
     qc.setQueryData(ME_KEY, null);
-    qc.removeQueries({ predicate: (q) => q.queryKey[0] !== ME_KEY[0] });
+    qc.setQueryData(SUBSCRIPTION_KEY, null);
+    qc.removeQueries({ predicate: (q) => q.queryKey[0] !== ME_KEY[0] && q.queryKey[0] !== SUBSCRIPTION_KEY[0] });
   }, [qc]);
 
   // Listen for the 401-interceptor event so the context clears even when
@@ -71,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const handler = () => {
       qc.setQueryData(ME_KEY, null);
+      qc.setQueryData(SUBSCRIPTION_KEY, null);
     };
     window.addEventListener("ark:session-expired", handler);
     return () => window.removeEventListener("ark:session-expired", handler);
@@ -84,10 +106,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [qc],
   );
 
+  // Merge subscription data into user object for convenience
+  const userWithSubscription = user
+    ? {
+        ...user,
+        subscriptionPlan: user.planId ?? subscription?.planId ?? null,
+        subscriptionStatus: user.subscriptionStatus ?? subscription?.status ?? null,
+      }
+    : null;
+
   return (
     <AuthContext.Provider
       value={{
-        user: user ?? null,
+        user: userWithSubscription,
         isLoading,
         isAuthenticated: !!user,
         login,

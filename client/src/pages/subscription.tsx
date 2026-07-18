@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/useAuth";
 import { getApiErrorMessage } from "@/lib/apiError";
-import { billingService } from "@/services/billing.service";
+import { subscriptionsService } from "@/services/subscriptions.service";
 import { f1000Service } from "@/services/f1000.service";
 import { plansService } from "@/services/plans.service";
 import type { F1000Membership } from "@/types/f1000";
 import type { Plan } from "@/types/plans";
+import type { CreateSubscriptionBody } from "@/types/subscriptions";
+import { SUBSCRIPTION_PLANS } from "@shared/schema";
 import {
   Crown,
   GraduationCap,
@@ -84,8 +86,8 @@ export default function SubscriptionPage() {
   });
 
   useEffect(() => {
-    if (user?.subscriptionPlan) {
-      setCurrentPlan(user.subscriptionPlan);
+    if (user?.planId) {
+      setCurrentPlan(user.planId);
     }
     if (user?.institution) {
       setInstitution(user.institution);
@@ -104,20 +106,19 @@ export default function SubscriptionPage() {
     }
     setIsUpdating(true);
     try {
-      const response = await billingService.startCheckout({
-        plan: planKey as any,
-        ...(planKey === "SCHOOL_STUDENT" ? { institution } : {}),
-      });
-      const session = response.data;
-      if (!session.requiresPayment) {
-        await billingService.completeCheckout(session.sessionId, true);
-        setCurrentPlan(planKey);
-        updateUser({ subscriptionPlan: planKey, subscriptionStatus: "active" });
-        setShowSuccess(true);
-        setSelectedPlan(null);
-        setTimeout(() => setShowSuccess(false), 3000);
-      } else if (session.redirectUrl) {
-        window.location.href = session.redirectUrl;
+      // Generate idempotency key for safe retries
+      const idempotencyKey = `sub_${user.id}_${planKey}_${Date.now()}`;
+      
+      const body: CreateSubscriptionBody = {
+        planId: planKey,
+        duration: "monthly",
+      };
+
+      const response = await subscriptionsService.create(body, idempotencyKey);
+      const data = response.data;
+
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
       } else {
         setErrorMsg("Checkout couldn't be opened. Please try again.");
       }
@@ -134,10 +135,16 @@ export default function SubscriptionPage() {
     setIsUpdating(true);
     setErrorMsg(null);
     try {
-      const response = await billingService.cancelSubscription();
+      // Get current subscription first
+      const subResponse = await subscriptionsService.getMine();
+      const subscription = subResponse.data;
+      
+      if (subscription.id) {
+        await subscriptionsService.update(subscription.id, { status: "inactive" });
+      }
       updateUser({ subscriptionStatus: "canceling" });
       setShowSuccess(true);
-      setErrorMsg(`Subscription will end on ${new Date(response.data.effectiveAt).toLocaleDateString()}.`);
+      setErrorMsg("Subscription will be canceled at the end of the current period.");
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err: unknown) {
       setErrorMsg(getApiErrorMessage(err, "Couldn't cancel the subscription. Please try again."));
@@ -188,6 +195,7 @@ export default function SubscriptionPage() {
   });
 
   const currentPlanData = sortedPlans.find((p) => mapPlanToSubscriptionPlan(p) === currentPlan) || sortedPlans[0];
+  const isSubscribed = user?.planId && user.planId !== "INDIVIDUAL_FREE";
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -217,51 +225,61 @@ export default function SubscriptionPage() {
         )}
       </AnimatePresence>
 
-      <div className="glass-card p-6 rounded-xl" data-testid="card-current-plan">
-        <div className="flex items-center gap-4">
-          <div
-            className="w-14 h-14 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: `${currentPlanData.color}15`, border: `2px solid ${currentPlanData.color}40` }}
-          >
-            {(() => {
-              const Icon = PLAN_ICONS[currentPlan] || User;
-              return <Icon className="h-7 w-7" style={{ color: currentPlanData.color }} />;
-            })()}
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <h2 className="font-display font-bold text-xl text-white" data-testid="text-current-plan">
-                {currentPlanData.title}
-              </h2>
-              <span
-                className="px-2 py-0.5 rounded text-xs font-mono font-bold uppercase"
-                style={{ color: currentPlanData.color, backgroundColor: `${currentPlanData.color}15`, border: `1px solid ${currentPlanData.color}30` }}
-                data-testid="text-subscription-status"
-              >
-                {user?.subscriptionStatus === "canceling" ? "CANCELING" : (user?.subscriptionStatus || "ACTIVE").toUpperCase()}
-              </span>
-            </div>
-            <p className="text-muted-foreground text-sm mt-1">
-              {currentPlanData.monthlyPrice === "0.00"
-                ? currentPlan === "ENTERPRISE" ? "Custom pricing" : "Free tier"
-                : `$${currentPlanData.monthlyPrice}/${currentPlanData.period}`}
-              {user?.institution && currentPlan === "SCHOOL_STUDENT" && (
-                <span className="ml-2 text-primary/70">{user.institution}</span>
-              )}
-            </p>
-          </div>
-          {FEATURES.subscriptionCancel && Number(currentPlanData.monthlyPrice) > 0 && currentPlan !== "ENTERPRISE" && user?.subscriptionStatus !== "canceling" && (
-            <button
-              onClick={handleCancel}
-              disabled={isUpdating}
-              className="px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wide border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
-              data-testid="button-cancel-subscription"
+      {isSubscribed ? (
+        <div className="glass-card p-6 rounded-xl" data-testid="card-current-plan">
+          <div className="flex items-center gap-4">
+            <div
+              className="w-14 h-14 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${currentPlanData.color}15`, border: `2px solid ${currentPlanData.color}40` }}
             >
-              Cancel
-            </button>
-          )}
+              {(() => {
+                const Icon = PLAN_ICONS[currentPlan] || User;
+                return <Icon className="h-7 w-7" style={{ color: currentPlanData.color }} />;
+              })()}
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <h2 className="font-display font-bold text-xl text-white" data-testid="text-current-plan">
+                  {currentPlanData.title}
+                </h2>
+                <span
+                  className="px-2 py-0.5 rounded text-xs font-mono font-bold uppercase"
+                  style={{ color: currentPlanData.color, backgroundColor: `${currentPlanData.color}15`, border: `1px solid ${currentPlanData.color}30` }}
+                  data-testid="text-subscription-status"
+                >
+                  {user?.subscriptionStatus === "canceling" ? "CANCELING" : (user?.subscriptionStatus || "ACTIVE").toUpperCase()}
+                </span>
+              </div>
+              <p className="text-muted-foreground text-sm mt-1">
+                {currentPlanData.monthlyPrice === "0.00"
+                  ? currentPlan === "ENTERPRISE" ? "Custom pricing" : "Free tier"
+                  : `$${currentPlanData.monthlyPrice}/${currentPlanData.period}`}
+                {user?.institution && currentPlan === "SCHOOL_STUDENT" && (
+                  <span className="ml-2 text-primary/70">{user.institution}</span>
+                )}
+              </p>
+            </div>
+            {FEATURES.subscriptionCancel && Number(currentPlanData.monthlyPrice) > 0 && currentPlan !== "ENTERPRISE" && user?.subscriptionStatus !== "canceling" && (
+              <button
+                onClick={handleCancel}
+                disabled={isUpdating}
+                className="px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wide border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
+                data-testid="button-cancel-subscription"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="glass-card p-6 rounded-xl text-center" data-testid="card-no-subscription">
+          <Shield className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+          <h2 className="font-display font-bold text-xl text-white mb-2">No active subscription</h2>
+          <p className="text-muted-foreground text-sm mb-6">
+            You&apos;re on the Free tier. Upgrade to unlock full ARK intelligence.
+          </p>
+        </div>
+      )}
 
       <AnimatePresence>
         {errorMsg && (
@@ -354,7 +372,7 @@ export default function SubscriptionPage() {
                 </p>
 
                 <div className="space-y-2.5 mb-6">
-                  {planData.features.slice(0, 4).map((feature, i) => (
+                  {SUBSCRIPTION_PLANS[planKey]?.features.slice(0, 4).map((feature, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <Check className="h-4 w-4 shrink-0 mt-0.5" style={{ color: planData.color }} />
                       <span className="text-sm text-muted-foreground">{feature}</span>

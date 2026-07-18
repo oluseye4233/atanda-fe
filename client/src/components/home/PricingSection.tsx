@@ -2,157 +2,10 @@ import { useAuth } from "@/lib/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Check, Crown, GraduationCap, User, Building2, Sparkles, Zap } from "lucide-react";
 import { plansService } from "@/services/plans.service";
 import { billingService } from "@/services/billing.service";
 import type { Plan } from "@/types/plans";
-
-const PLAN_ICONS: Record<string, typeof User> = {
-  INDIVIDUAL_FREE: User,
-  INDIVIDUAL_EXPLORER: Zap,
-  INDIVIDUAL_PRO: Crown,
-  SCHOOL_STUDENT: GraduationCap,
-  ENTERPRISE: Building2,
-};
-
-const PLAN_ORDER = [
-  "INDIVIDUAL_FREE",
-  "INDIVIDUAL_EXPLORER",
-  "INDIVIDUAL_PRO",
-  "SCHOOL_STUDENT",
-  "ENTERPRISE",
-];
-
-function mapPlanToKey(title: string): string {
-  const t = title.toUpperCase().replace(/\s+/g, "_");
-  if (t.includes("EXPLORER")) return "INDIVIDUAL_EXPLORER";
-  if (t.includes("PRO")) return "INDIVIDUAL_PRO";
-  if (t.includes("ARCHITECT")) return "INDIVIDUAL_PRO";
-  if (t.includes("SCHOOL") || t.includes("STUDENT")) return "SCHOOL_STUDENT";
-  if (t.includes("INSTITUTION") || t.includes("ENTERPRISE")) return "ENTERPRISE";
-  return "INDIVIDUAL_FREE";
-}
-
-function PricingCard({ plan, index, onSubscribe }: { plan: Plan; index: number; onSubscribe: (planKey: string) => void }) {
-  const Icon = PLAN_ICONS[mapPlanToKey(plan.title)] || User;
-  const isPopular = plan.title === "Pro";
-  const isEnterprise = plan.title === "Institution";
-  const isFree = plan.monthlyPrice === "0.00";
-  const planKey = mapPlanToKey(plan.title);
-
-  const cardStyles = [
-    "xl:col-span-1",
-    "xl:col-span-1",
-    "xl:col-span-1",
-    "xl:col-span-1",
-    "xl:col-span-1",
-  ];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className={`glass-card rounded-2xl overflow-hidden flex flex-col relative ${cardStyles[index]} ${
-        isPopular ? "ring-1 ring-primary/40" : ""
-      } ${isEnterprise ? "ring-1 ring-secondary/40" : ""}`}
-      style={isPopular ? { borderColor: "hsl(188 86% 53% / 0.3)" } : {}}
-      data-testid={`card-pricing-${plan.title.toLowerCase()}`}
-    >
-      {isPopular && !isEnterprise && (
-        <div className="bg-primary text-primary-foreground text-[10px] font-mono uppercase tracking-widest text-center py-1.5 flex items-center justify-center gap-1">
-          <Sparkles className="h-3 w-3" /> Most Popular
-        </div>
-      )}
-
-      <div className="p-6 flex-1 flex flex-col">
-        <div className="flex items-center gap-3 mb-4">
-          <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center"
-            style={{
-              backgroundColor: `${isPopular ? "hsl(188 86% 53%)" : isEnterprise ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)"}15`,
-              border: `1px solid ${isPopular ? "hsl(188 86% 53%)" : isEnterprise ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)"}30`,
-            }}
-          >
-            <Icon className="h-5 w-5" style={{ color: isPopular ? "hsl(188 86% 53%)" : isEnterprise ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)" }} />
-          </div>
-          <div>
-            <h3 className="font-display font-bold text-white text-sm uppercase tracking-wide">{plan.title}</h3>
-            <span className="text-[10px] font-mono text-muted-foreground uppercase">{plan.freeTrial ? "Free trial available" : "No free trial"}</span>
-          </div>
-        </div>
-
-        <div className="mb-6">
-          {isFree ? (
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-display font-black text-white">Free</span>
-            </div>
-          ) : isEnterprise ? (
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-display font-black text-white">Custom</span>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              <div className="flex items-baseline gap-1 flex-wrap">
-                <span className="text-3xl font-display font-black text-white">
-                  ${plan.monthlyPrice}
-                </span>
-                <span className="text-sm text-muted-foreground font-mono">/month</span>
-              </div>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-secondary">
-                ${plan.yearlyPrice}/year (save ~17%)
-              </span>
-            </div>
-          )}
-        </div>
-
-        <p className="text-sm text-muted-foreground leading-relaxed mb-6 flex-1">
-          {plan.description}
-        </p>
-
-        <div className="space-y-2.5 mb-6">
-          {plan.features.slice(0, 4).map((feature, i) => (
-            <div key={i} className="flex items-start gap-2">
-              <Check className="h-4 w-4 shrink-0 mt-0.5" style={{ color: isPopular ? "hsl(188 86% 53%)" : isEnterprise ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)" }} />
-              <span className="text-sm text-muted-foreground">{feature}</span>
-            </div>
-          ))}
-        </div>
-
-        {!isEnterprise && (
-          <button
-            onClick={() => onSubscribe(planKey)}
-            className="w-full py-3 rounded-lg font-mono text-sm uppercase tracking-wide transition-all duration-300 flex items-center justify-center gap-2 hover:scale-[1.02]"
-            style={{
-              color: isPopular ? "hsl(188 86% 53%)" : isEnterprise ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)",
-              backgroundColor: `${isPopular ? "hsl(188 86% 53%)" : isEnterprise ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)"}15`,
-              border: `1px solid ${isPopular ? "hsl(188 86% 53%)" : isEnterprise ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)"}30`,
-            }}
-            data-testid={`button-pricing-${plan.title.toLowerCase()}`}
-          >
-            {isFree ? "Get Started Free" : "Start Free Trial"}
-          </button>
-        )}
-
-        {isEnterprise && (
-          <a
-            href="/contact"
-            className="w-full py-3 rounded-lg font-mono text-sm uppercase tracking-wide transition-all duration-300 flex items-center justify-center gap-2 opacity-60 cursor-default"
-            style={{
-              color: "hsl(152 69% 31%)",
-              backgroundColor: "hsl(152 69% 31% / 0.1)",
-              border: "1px solid hsl(152 69% 31% / 0.2)",
-            }}
-            data-testid="button-contact-sales"
-          >
-            <Building2 className="h-4 w-4" />
-            Contact Sales
-          </a>
-        )}
-      </div>
-    </motion.div>
-  );
-}
+import { PricingCard, FeatureComparison } from "./PricingComponents";
 
 export function PricingSection() {
   const { user } = useAuth();
@@ -199,7 +52,7 @@ export function PricingSection() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {PLAN_ORDER.map((_, i) => (
+            {Array.from({ length: 3 }).map((_, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
@@ -230,11 +83,7 @@ export function PricingSection() {
     return null;
   }
 
-  const sortedPlans = [...plans].sort((a, b) => {
-    const aIndex = PLAN_ORDER.indexOf(mapPlanToKey(a.title));
-    const bIndex = PLAN_ORDER.indexOf(mapPlanToKey(b.title));
-    return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex);
-  });
+  const currentPlanId = user?.subscriptionPlan || undefined;
 
   return (
     <section
@@ -270,71 +119,18 @@ export function PricingSection() {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {sortedPlans.map((plan, index) => (
-            <PricingCard key={plan.id} plan={plan} index={index} onSubscribe={handleSubscribe} />
+          {plans.map((plan) => (
+            <PricingCard
+              key={plan.id}
+              plan={plan}
+              onSubscribe={handleSubscribe}
+              isCurrent={!!currentPlanId}
+              currentPlanId={currentPlanId}
+            />
           ))}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="mt-16 glass-card p-6 rounded-xl"
-          data-testid="card-pricing-comparison"
-        >
-          <h3 className="font-display font-bold text-lg text-primary uppercase tracking-widest mb-6">
-            Feature Comparison
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/10">
-                  <th className="text-left py-3 pr-4 font-mono text-muted-foreground uppercase tracking-wide text-xs">
-                    Feature
-                  </th>
-                  {[...sortedPlans].reverse().map((plan) => (
-                    <th key={plan.id} className="py-3 px-2 text-center">
-                      <span className="font-mono text-xs uppercase tracking-wide" style={{ color: plan.title === "Pro" ? "hsl(188 86% 53%)" : plan.title === "Institution" ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)" }}>
-                        {plan.title}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { feature: "Resume uploads", values: ["Unlimited", "Unlimited", "Unlimited", "Unlimited", "1/month"] },
-                  { feature: "JST Score", values: [true, true, true, true, true] },
-                  { feature: "Full Dashboard", values: [true, true, true, true, true] },
-                  { feature: "Career Pathways", values: [true, true, true, true, false] },
-                  { feature: "FORGE Cards", values: [true, true, true, true, false] },
-                  { feature: "Executive Report", values: [true, true, true, true, false] },
-                  { feature: "Context Craft (CCGE)", values: [true, true, true, true, false] },
-                  { feature: "Workforce Intelligence", values: [true, false, false, false, false] },
-                  { feature: "Institution Dashboard", values: [false, true, false, false, false] },
-                  { feature: "Priority Support", values: [true, false, false, false, false] },
-                ].map((row, i) => (
-                  <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="py-3 pr-4 text-muted-foreground font-mono text-xs">{row.feature}</td>
-                    {row.values.map((val, j) => (
-                      <td key={j} className="py-3 px-2 text-center">
-                        {typeof val === "boolean" ? (
-                          val ? (
-                            <Check className="h-4 w-4 mx-auto" style={{ color: [...sortedPlans].reverse()[j]?.title === "Pro" ? "hsl(188 86% 53%)" : [...sortedPlans].reverse()[j]?.title === "Institution" ? "hsl(152 69% 31%)" : "hsl(188 86% 53%)" }} />
-                          ) : (
-                            <span className="text-muted-foreground/30">—</span>
-                          )
-                        ) : (
-                          <span className="text-xs font-mono text-muted-foreground">{val}</span>
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
+        <FeatureComparison plans={plans} sortedPlans={plans} />
       </div>
     </section>
   );
