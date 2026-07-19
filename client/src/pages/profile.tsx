@@ -1,60 +1,81 @@
 import { useEffect, useState } from "react";
-import { FEATURES } from "@shared/featureFlags";
-import { motion } from "framer-motion";
 import { useAuth } from "@/lib/useAuth";
-import { getApiErrorMessage } from "@/lib/apiError";
-import { aiService } from "@/services/ai.service";
-import { guinService } from "@/services/guin.service";
 import { profileService } from "@/services/profile.service";
 import { resumeService } from "@/services/resume.service";
+import { guinService } from "@/services/guin.service";
 import type { GuinProfile } from "@/types/guin";
 import type { ProfileCredits, SpcSalesSummary } from "@/types/profile";
-import { SUBSCRIPTION_PLANS, CONTEXT_CRAFT_LEVELS, formatPriceUsd as formatPriceDual, type SubscriptionPlan, type ContextCraftLevel } from "@shared/schema";
-import { GuinProfileView } from "./guin-public";
-import {
-  User,
-  Mail,
-  Briefcase,
-  Building2,
-  MapPin,
-  Crown,
-  ShieldCheck,
-  CreditCard,
-  Save,
-  CheckCircle2,
-  GraduationCap,
-  Award,
-  Coins,
-  ShoppingBag,
-  Download,
-  Trash2,
-  Cpu,
-} from "lucide-react";
-import { Link } from "react-router-dom";
-import { JnomicsCardList } from "@/components/dashboard/JnomicsCardList";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ProfileTab } from "@/components/profile/ProfileTab";
+import { SubscriptionTab } from "@/components/profile/SubscriptionTab";
+import { SecurityTab } from "@/components/profile/SecurityTab";
+import { AITab } from "@/components/profile/AITab";
+import { MarketplaceTab } from "@/components/profile/MarketplaceTab";
+import { PortfolioTab } from "@/components/profile/PortfolioTab";
+import { PrivacyTab } from "@/components/profile/PrivacyTab";
 import { ArkReportDownloadButton } from "@/components/ArkReportDownloadButton";
+import { Link } from "react-router-dom";
+import { FEATURES } from "@shared/featureFlags";
+import { User, CreditCard, ShieldCheck, Cpu, ShoppingBag, FileText, AlertTriangle } from "lucide-react";
 
-type AiModelInfo = {
-  id: string;
-  provider: string;
-  label: string;
-  costTier: "economy" | "premium";
-  blurb: string;
-  available: boolean;
-  allowedForPlan: boolean;
-};
+type TabKey = "profile" | "subscription" | "security" | "ai" | "marketplace" | "portfolio" | "privacy";
+
+const TAB_CONFIG: { key: TabKey; label: string; icon: React.ComponentType<{ className?: string }>; feature?: keyof typeof FEATURES }[] = [
+  { key: "profile", label: "Profile", icon: User },
+  { key: "subscription", label: "Subscription", icon: CreditCard },
+  { key: "security", label: "Security", icon: ShieldCheck },
+  { key: "ai", label: "AI Engine", icon: Cpu },
+  { key: "marketplace", label: "Marketplace", icon: ShoppingBag },
+  { key: "portfolio", label: "Portfolio", icon: FileText },
+  { key: "privacy", label: "Privacy", icon: AlertTriangle },
+];
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
-  const [editing, setEditing] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [form, setForm] = useState({
-    name: user?.name || "",
-    role: user?.role || "",
-    department: user?.department || "",
-    location: user?.location || "",
-    seniority: user?.seniority || "",
-  });
+  const [activeTab, setActiveTab] = useState<TabKey>("profile");
+    const handleTabChange = (value: string) => {
+      setActiveTab(value as TabKey);
+    };
+
+    const [credits, setCredits] = useState<ProfileCredits | null>(null);
+  const [sales, setSales] = useState<SpcSalesSummary | null>(null);
+  const [guin, setGuin] = useState<GuinProfile | null>(null);
+  const [matchedCardIds, setMatchedCardIds] = useState<string[] | null>(null);
+
+  const loadGuin = async () => {
+    if (!user) return;
+    try {
+      const { data } = await guinService.getByUserId(user.id);
+      setGuin(data);
+    } catch {
+      setGuin(null);
+    }
+  };
+
+  const loadProfileData = async () => {
+    if (!user) return;
+
+    try {
+      const [creditsRes, salesRes, resumeRes] = await Promise.all([
+        profileService.getCredits(user.id),
+        profileService.getSpcSales(user.id),
+        resumeService.getLatest(user.id),
+      ]);
+      setCredits(creditsRes.data);
+      setSales(salesRes.data);
+      setMatchedCardIds(resumeRes.data.matchedCardIds ?? []);
+    } catch {
+      setCredits(null);
+      setSales(null);
+      setMatchedCardIds([]);
+    }
+
+    await loadGuin();
+  };
+
+  useEffect(() => {
+    loadProfileData();
+  }, [user?.id]);
 
   if (!user) {
     return (
@@ -64,103 +85,8 @@ export default function ProfilePage() {
     );
   }
 
-  const plan = SUBSCRIPTION_PLANS[(user.subscriptionPlan || "INDIVIDUAL_FREE") as SubscriptionPlan];
-  const cert = CONTEXT_CRAFT_LEVELS[(user.contextCraftCertLevel || "NONE") as ContextCraftLevel];
-
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [credits, setCredits] = useState<ProfileCredits | null>(null);
-  const [sales, setSales] = useState<SpcSalesSummary | null>(null);
-  const [guin, setGuin] = useState<GuinProfile | null>(null);
-  // Junglenomics Card Portfolio — pulled from the user's latest assessment.
-  // matchedCardIds is populated server-side by resumeAnalyzer.pickMatchedCards
-  // off the user's CV/skills, so any user with an assessment has a portfolio.
-  const [matchedCardIds, setMatchedCardIds] = useState<string[] | null>(null);
-  // ── AI Engine preference (LLM-resilient dropdown) ──
-  const [aiModels, setAiModels] = useState<AiModelInfo[] | null>(null);
-  const [aiPreferred, setAiPreferred] = useState<string | null>(null);
-  const [aiSaving, setAiSaving] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [aiSaved, setAiSaved] = useState(false);
-
-  const loadGuin = async () => {
-    try {
-      const { data } = await guinService.getByUserId(user.id);
-      setGuin(data);
-    } catch {
-      setGuin(null);
-    }
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    profileService.getCredits(user.id)
-      .then(({ data }) => { if (!cancelled) setCredits(data); })
-      .catch(() => { if (!cancelled) setCredits(null); });
-    profileService.getSpcSales(user.id)
-      .then(({ data }) => { if (!cancelled) setSales(data); })
-      .catch(() => { if (!cancelled) setSales(null); });
-    resumeService.getLatest(user.id)
-      .then(({ data }) => { if (!cancelled) setMatchedCardIds(data.matchedCardIds ?? []); })
-      .catch(() => { if (!cancelled) setMatchedCardIds([]); });
-    void loadGuin();
-    aiService.getModels()
-      .then(({ data }) => {
-        if (cancelled) return;
-        setAiModels(data.models.map((model) => ({
-          ...model,
-          label: model.id,
-          blurb: "",
-          costTier: model.costTier === "economy" ? "economy" : "premium",
-          allowedForPlan: true,
-        })));
-        setAiPreferred(data.preferred);
-      })
-      .catch(() => { if (!cancelled) setAiModels([]); });
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.id]);
-
-  const handleAiModelChange = async (value: string) => {
-    const model = value === "" ? null : value;
-    setAiError(null);
-    setAiSaving(true);
-    const prev = aiPreferred;
-    setAiPreferred(model);
-    try {
-      await aiService.setModelPreference(model);
-      setAiSaved(true);
-      setTimeout(() => setAiSaved(false), 2500);
-    } catch (error: unknown) {
-      setAiPreferred(prev);
-      setAiError(getApiErrorMessage(error, "Couldn't save the AI model preference."));
-    } finally {
-      setAiSaving(false);
-    }
-  };
-
-  const handleSave = async () => {
-    setSaveError(null);
-    try {
-      await profileService.update(user.id, form);
-      updateUser(form as Parameters<typeof updateUser>[0]);
-      setSaved(true);
-      setEditing(false);
-      setTimeout(() => setSaved(false), 2500);
-    } catch (error: unknown) {
-      setSaveError(getApiErrorMessage(error, "Couldn't save the profile. Check your connection and try again."));
-    }
-  };
-
-  const fields = [
-    { key: "name", label: "Full Name", icon: User, value: form.name },
-    { key: "role", label: "Role / Title", icon: Briefcase, value: form.role },
-    { key: "department", label: "Company/Department", icon: Building2, value: form.department },
-    { key: "seniority", label: "Seniority Level", icon: Award, value: form.seniority },
-    { key: "location", label: "Location", icon: MapPin, value: form.location },
-  ];
-
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8">
       <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-display font-bold text-primary tracking-widest uppercase" data-testid="text-profile-title">
@@ -182,337 +108,52 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {saveError && (
-        <div className="glass-card p-4 rounded-xl border border-destructive/30 bg-destructive/5 flex items-center gap-3">
-          <span className="font-mono text-sm text-destructive">{saveError}</span>
-        </div>
-      )}
-
-      {saved && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-card p-4 rounded-xl border border-secondary/30 bg-secondary/5 flex items-center gap-3"
-        >
-          <CheckCircle2 className="h-5 w-5 text-secondary shrink-0" />
-          <span className="font-mono text-sm text-secondary">Profile updated successfully.</span>
-        </motion.div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="glass-card p-6 rounded-xl" data-testid="card-profile-details">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display font-bold text-lg text-white uppercase tracking-wider">Profile Details</h2>
-              <button
-                onClick={() => editing ? handleSave() : setEditing(true)}
-                data-testid="button-edit-profile"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wider transition-all hover:scale-[1.02]"
-                style={{
-                  color: editing ? "#44AA44" : "hsl(var(--primary))",
-                  backgroundColor: editing ? "rgba(68,170,68,0.1)" : "hsl(var(--primary) / 0.1)",
-                  border: `1px solid ${editing ? "rgba(68,170,68,0.3)" : "hsl(var(--primary) / 0.3)"}`,
-                }}
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 gap-1 bg-muted/50 p-1 rounded-lg">
+          {TAB_CONFIG.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <TabsTrigger
+                key={tab.key}
+                value={tab.key}
+                className="flex items-center justify-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-wider data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                disabled={tab.feature && !FEATURES[tab.feature]}
               >
-                {editing ? <Save className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
-                {editing ? "Save Changes" : "Edit Profile"}
-              </button>
-            </div>
+                <Icon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
 
-            <div className="space-y-4">
-              {fields.map(({ key, label, icon: Icon, value }) => (
-                <div key={key} className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-[10px] uppercase font-mono text-muted-foreground tracking-widest block mb-1">{label}</label>
-                    {editing ? (
-                      <input
-                        data-testid={`input-profile-${key}`}
-                        type="text"
-                        value={value}
-                        onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                        className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                      />
-                    ) : (
-                      <p className="text-white font-mono text-sm" data-testid={`text-profile-${key}`}>
-                        {value || "—"}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
+        <TabsContent value="profile" className="mt-6">
+          <ProfileTab user={user} updateUser={updateUser} />
+        </TabsContent>
 
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="flex-1">
-                  <label className="text-[10px] uppercase font-mono text-muted-foreground tracking-widest block mb-1">Email</label>
-                  <p className="text-white font-mono text-sm" data-testid="text-profile-email">{user.username}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <TabsContent value="subscription" className="mt-6">
+          <SubscriptionTab user={user} />
+        </TabsContent>
 
-        <div className="space-y-6">
-          <Link to="/subscription" className="block" data-testid="link-profile-subscription">
-            <div className="glass-card p-5 rounded-xl hover:border-primary/30 transition-all hover:scale-[1.02] cursor-pointer border border-transparent">
-              <div className="flex items-center gap-3 mb-3">
-                <CreditCard className="h-5 w-5" style={{ color: plan.color }} />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Subscription</span>
-              </div>
-              <p className="font-display font-bold text-lg text-white">{plan.label}</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {plan.price === 0 ? (plan.key === "ENTERPRISE" ? "Custom" : "Free") : `$${plan.price}/${plan.period}`}
-              </p>
-              <div className="mt-3 px-2 py-1 rounded text-[10px] font-mono font-bold uppercase inline-block" style={{ color: plan.color, backgroundColor: `${plan.color}15`, border: `1px solid ${plan.color}30` }}>
-                ACTIVE
-              </div>
-            </div>
-          </Link>
+        <TabsContent value="security" className="mt-6">
+          <SecurityTab />
+        </TabsContent>
 
-          {FEATURES.contextCraftPage ? (
-            <Link to="/context-craft" className="block" data-testid="link-profile-cert">
-              <div className="glass-card p-5 rounded-xl hover:border-primary/30 transition-all hover:scale-[1.02] cursor-pointer border border-transparent">
-                <div className="flex items-center gap-3 mb-3">
-                  <ShieldCheck className="h-5 w-5" style={{ color: cert.color }} />
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Context Craft</span>
-                </div>
-                <p className="font-display font-bold text-lg text-white">{cert.label}</p>
-                <p className="text-sm text-muted-foreground mt-1">{cert.multiplier}x JST Multiplier</p>
-              </div>
-            </Link>
-          ) : (
-            <div className="glass-card p-5 rounded-xl border border-transparent" data-testid="card-profile-cert-static">
-              <div className="flex items-center gap-3 mb-3">
-                <ShieldCheck className="h-5 w-5" style={{ color: cert.color }} />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Context Craft</span>
-              </div>
-              <p className="font-display font-bold text-lg text-white">{cert.label}</p>
-              <p className="text-sm text-muted-foreground mt-1">{cert.multiplier}x JST Multiplier</p>
-            </div>
-          )}
+        <TabsContent value="ai" className="mt-6">
+          <AITab userId={user.id} />
+        </TabsContent>
 
-          {/* ── AI Engine — LLM-resilient model selector ── */}
-          <div className="glass-card p-5 rounded-xl border border-transparent" data-testid="card-ai-engine">
-            <div className="flex items-center gap-3 mb-3">
-              <Cpu className="h-5 w-5 text-primary" />
-              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">AI Engine</span>
-              {aiSaved && <CheckCircle2 className="h-4 w-4 text-secondary ml-auto" data-testid="icon-ai-model-saved" />}
-            </div>
-            <p className="text-xs text-muted-foreground mb-3">
-              Pick the model powering your AI features. Economy models cost fewer tokens; if your pick is ever unavailable, ARK auto-falls back so nothing breaks.
-            </p>
-            {aiModels === null ? (
-              <p className="text-xs font-mono text-muted-foreground">Loading models…</p>
-            ) : (
-              <select
-                value={aiPreferred ?? ""}
-                onChange={(e) => handleAiModelChange(e.target.value)}
-                disabled={aiSaving}
-                className="w-full bg-background/60 border border-white/10 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-primary/50 disabled:opacity-60"
-                data-testid="select-ai-model"
-              >
-                <option value="">Auto (platform default)</option>
-                <optgroup label="Economy — lowest token cost">
-                  {aiModels.filter(m => m.costTier === "economy").map(m => (
-                    <option key={m.id} value={m.id} disabled={!m.available || !m.allowedForPlan} data-testid={`option-ai-model-${m.id}`}>
-                      {m.label}{!m.available ? " (offline)" : !m.allowedForPlan ? " (upgrade)" : ""}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="Premium — deeper reasoning">
-                  {aiModels.filter(m => m.costTier === "premium").map(m => (
-                    <option key={m.id} value={m.id} disabled={!m.available || !m.allowedForPlan} data-testid={`option-ai-model-${m.id}`}>
-                      {m.label}{!m.available ? " (offline)" : !m.allowedForPlan ? " (upgrade)" : ""}
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
-            )}
-            {aiPreferred && aiModels && (
-              <p className="text-[11px] text-muted-foreground mt-2 font-mono" data-testid="text-ai-model-blurb">
-                {aiModels.find(m => m.id === aiPreferred)?.blurb}
-              </p>
-            )}
-            {aiError && <p className="text-xs font-mono text-destructive mt-2" data-testid="text-ai-model-error">{aiError}</p>}
-          </div>
+        <TabsContent value="marketplace" className="mt-6">
+          <MarketplaceTab credits={credits} sales={sales} />
+        </TabsContent>
 
-          {user.institution && (
-            <div className="glass-card p-5 rounded-xl border border-transparent">
-              <div className="flex items-center gap-3 mb-3">
-                <GraduationCap className="h-5 w-5 text-purple-400" />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Institution</span>
-              </div>
-              <p className="font-display font-bold text-lg text-white">{user.institution}</p>
-            </div>
-          )}
+        <TabsContent value="portfolio" className="mt-6">
+          <PortfolioTab matchedCardIds={matchedCardIds} guin={guin} onLoadGuin={loadGuin} />
+        </TabsContent>
 
-          <Link to="/marketplace" className="block" data-testid="link-profile-marketplace">
-            <div className="glass-card p-5 rounded-xl hover:border-primary/30 transition-all hover:scale-[1.02] cursor-pointer border border-transparent space-y-3">
-              <div className="flex items-center gap-3">
-                <ShoppingBag className="h-5 w-5 text-primary" />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">SPHINX Marketplace</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-[9px] uppercase font-mono tracking-widest text-muted-foreground">Credits</div>
-                  <div className="flex items-center gap-1.5">
-                    <Coins className="h-4 w-4 text-amber-400" />
-                    <span className="font-display font-bold text-base text-amber-400" data-testid="text-profile-credits">
-                      {credits ? formatPriceDual(credits.balance) : "—"}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[9px] uppercase font-mono tracking-widest text-muted-foreground">Earned</div>
-                  <div className="font-display font-bold text-base text-secondary" data-testid="text-profile-earned">
-                    {sales ? formatPriceDual(sales.totalEarned) : "—"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[9px] uppercase font-mono tracking-widest text-muted-foreground">Sales</div>
-                  <div className="font-display font-bold text-xl text-white" data-testid="text-profile-sales">
-                    {sales ? sales.salesCount : "—"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Link>
-        </div>
-      </div>
-
-      {/* ── Junglenomics Card Portfolio ─────────────────────────
-          Skill-to-card mapping derived from the user's latest assessment.
-          Each card represents a real skillset detected in the user's CV
-          (or system-provided skills), mapped to the FORGE Library via
-          JNOMICSDECK ALPHA. Hidden until the assessment has loaded so we
-          don't flash an empty state for users mid-onboarding. */}
-      {matchedCardIds !== null && (
-        <div className="pt-4 border-t border-white/5" data-testid="section-card-portfolio">
-          <div className="mb-4">
-            <h2 className="text-xl font-display font-bold text-white uppercase tracking-widest">
-              My Junglenomics Card Portfolio
-            </h2>
-            <p className="text-xs font-mono text-muted-foreground mt-1">
-              Your detected skillsets, mapped to FORGE Library cards. Flip any card to see its tier rationale.
-            </p>
-          </div>
-          {matchedCardIds.length === 0 ? (
-            <div className="glass-card p-8 rounded-xl text-center" data-testid="text-no-portfolio">
-              <p className="font-mono text-sm text-muted-foreground uppercase">
-                No card portfolio yet.
-              </p>
-              <p className="text-xs font-mono text-muted-foreground mt-2">
-                Upload your CV or run an assessment to map your skills to Junglenomics cards.
-              </p>
-              <Link
-                to="/upload"
-                className="inline-block mt-4 px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wider bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition-colors"
-                data-testid="link-upload-cv"
-              >
-                Upload CV →
-              </Link>
-            </div>
-          ) : (
-            <JnomicsCardList matchedCardIds={matchedCardIds} />
-          )}
-        </div>
-      )}
-
-      {guin && (
-        <div className="pt-4 border-t border-white/5">
-          <GuinProfileView profile={guin} viewerCanEndorse={false} onEndorse={loadGuin} />
-        </div>
-      )}
-
-      <DataPrivacySection />
-    </div>
-  );
-}
-
-function DataPrivacySection() {
-  const [confirmText, setConfirmText] = useState("");
-  const [busy, setBusy] = useState<"export" | "delete" | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleExport = async () => {
-    setBusy("export"); setError(null);
-    try {
-      const { data: blob } = await profileService.exportData();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `ark-export-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
-    } catch (error: unknown) {
-      setError(getApiErrorMessage(error, "Couldn't export your data. Check your connection and try again."));
-    } finally { setBusy(null); }
-  };
-
-  const handleDelete = async () => {
-    if (confirmText !== "DELETE") { setError("Type DELETE to confirm."); return; }
-    setBusy("delete"); setError(null);
-    try {
-      await profileService.deleteAccount({ confirm: "DELETE" });
-      window.location.assign("/login");
-    } catch (error: unknown) {
-      setError(getApiErrorMessage(error, "Couldn't delete your account. Check your connection and try again."));
-      setBusy(null);
-    }
-  };
-
-  return (
-    <div className="pt-6 mt-6 border-t border-white/5 space-y-4" data-testid="section-data-privacy">
-      <div>
-        <h2 className="text-xl font-display font-bold text-white">Data &amp; Privacy</h2>
-        <p className="text-xs font-mono text-muted-foreground mt-1">GDPR / CCPA rights — export or permanently delete your account.</p>
-      </div>
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="glass-card p-5 rounded-xl space-y-3">
-          <div className="flex items-center gap-2">
-            <Download className="h-5 w-5 text-primary" />
-            <span className="font-display font-bold text-white">Export My Data</span>
-          </div>
-          <p className="text-xs font-mono text-muted-foreground">Download a JSON file of every record tied to your account: profile, assessments, game sessions, billing history, ARK events, AI usage.</p>
-          <button
-            onClick={handleExport}
-            disabled={busy !== null}
-            data-testid="button-export-data"
-            className="w-full bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary font-mono text-xs uppercase tracking-wider py-2 rounded transition-all disabled:opacity-50"
-          >
-            {busy === "export" ? "Exporting…" : "Download JSON Export"}
-          </button>
-        </div>
-        <div className="glass-card p-5 rounded-xl space-y-3 border border-destructive/20">
-          <div className="flex items-center gap-2">
-            <Trash2 className="h-5 w-5 text-destructive" />
-            <span className="font-display font-bold text-white">Delete Account</span>
-          </div>
-          <p className="text-xs font-mono text-muted-foreground">Permanently erase your account and all associated data. This cannot be undone. Type <code className="text-destructive">DELETE</code> to confirm.</p>
-          <input
-            type="text"
-            value={confirmText}
-            onChange={(e) => setConfirmText(e.target.value)}
-            placeholder="Type DELETE"
-            data-testid="input-delete-confirm"
-            className="w-full bg-background border border-border text-white font-mono text-xs px-3 py-2 rounded focus:border-destructive outline-none"
-          />
-          <button
-            onClick={handleDelete}
-            disabled={busy !== null || confirmText !== "DELETE"}
-            data-testid="button-delete-account"
-            className="w-full bg-destructive/10 hover:bg-destructive/20 border border-destructive/40 text-destructive font-mono text-xs uppercase tracking-wider py-2 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {busy === "delete" ? "Deleting…" : "Permanently Delete Account"}
-          </button>
-        </div>
-      </div>
-      {error && <p className="text-xs font-mono text-destructive" data-testid="text-privacy-error">{error}</p>}
+        <TabsContent value="privacy" className="mt-6">
+          <PrivacyTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
