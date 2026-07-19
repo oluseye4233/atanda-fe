@@ -57,7 +57,9 @@ function App() {
                   path="/*"
                   element={
                     <ProtectedRoute>
-                      <Suspense fallback={<TopLoadingBar />}>\n                        <AuthenticatedApp />\n                      </Suspense>
+                      <Suspense fallback={<TopLoadingBar />}>
+                        <AuthenticatedApp />                      
+                      </Suspense>
                     </ProtectedRoute>
                   }
                 />

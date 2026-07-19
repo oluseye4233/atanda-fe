@@ -5,12 +5,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { ArkIdentity, LhcsSignal, FlywheelCta } from "@/types/ark";
 import type { Assessment } from "@/types/resume";
 
-type Light = "green" | "amber" | "red";
+const STALE_5M = 1000 * 60 * 5;
+const GC_30M = 1000 * 60 * 30;
 
 function toLight(v: string | null): Light {
   if (v === "green" || v === "amber" || v === "red") return v;
   return "red";
 }
+
+type Light = "green" | "amber" | "red";
 
 /**
  * Single data source for the Intelligence Hub. Fetches ARK identity, the
@@ -32,6 +35,8 @@ export function useArkDashboard() {
       }
     },
     enabled: !!userId,
+    staleTime: STALE_5M,
+    gcTime: GC_30M,
   });
 
   const assessment = useQuery({
@@ -45,6 +50,8 @@ export function useArkDashboard() {
       }
     },
     enabled: !!userId,
+    staleTime: STALE_5M,
+    gcTime: GC_30M,
   });
 
   const lhcs = useQuery({
@@ -57,6 +64,8 @@ export function useArkDashboard() {
       }
     },
     enabled: !!userId,
+    staleTime: STALE_5M,
+    gcTime: GC_30M,
   });
 
   const flywheel = useQuery({
@@ -69,6 +78,8 @@ export function useArkDashboard() {
       }
     },
     enabled: !!userId,
+    staleTime: STALE_5M,
+    gcTime: GC_30M,
   });
 
   // ── Map service payloads → widget-ready props ──
