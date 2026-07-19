@@ -52,11 +52,11 @@ export function HeroSection() {
             className="font-display font-black leading-[1.05] tracking-tight text-4xl sm:text-5xl md:text-[3.55rem] text-white"
             data-testid="hero-heading"
           >
-            KNOW YOUR WORTH.
+            Know your worth.
             <br />
-            KNOW YOUR <span className="text-destructive">RISK</span>.
+            Know your <span className="text-destructive">risk</span>.
             <br />
-            KNOW YOUR <span className="text-primary">NEXT MOVE</span>.
+            Know your <span className="text-primary">next move.</span>.
           </motion.h1>
 
           <motion.div

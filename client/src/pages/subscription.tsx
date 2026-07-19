@@ -110,9 +110,9 @@ export default function SubscriptionPage() {
   }
 
   const plans = plansQuery.data;
-  const currentPlanId = user?.planId || null;
+  const currentPlanId = user?.subscriptionPlan || null;
   const currentPlanData = plans.find((p) => p.id === currentPlanId) || plans[0];
-  const isSubscribed = user?.planId && user.planId !== "INDIVIDUAL_FREE";
+  const isSubscribed = user?.subscriptionPlan && user.subscriptionPlan !== "INDIVIDUAL_FREE";
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -208,8 +208,8 @@ export default function SubscriptionPage() {
             >
               {isCurrent && (
                 <div className="text-[10px] font-mono uppercase tracking-widest text-center py-1.5 flex items-center justify-center gap-1" style={{ backgroundColor: `${DEFAULT_COLOR}20`, color: DEFAULT_COLOR }}>
-                  <Shield className="h-3 w-3" /> Current Plan
-                </div>
+                    <Shield className="h-3 w-3" /> Current Plan
+                  </div>
               )}
 
               <div className="p-6 flex-1 flex flex-col">

@@ -8,7 +8,9 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { authService } from "@/services/auth.service";
 import { subscriptionsService } from "@/services/subscriptions.service";
+import { isNotFound } from "@/lib/apiError";
 import type { AuthUser } from "@/types/auth";
+import type { Subscription } from "@/types/subscriptions";
 
 export type { AuthUser };
 
@@ -48,14 +50,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   // Fetch subscription data when user is authenticated
-  const { data: subscription, isLoading: subLoading } = useQuery({
+  const { data: subscription, isLoading: subLoading } = useQuery<Subscription | null>({
     queryKey: SUBSCRIPTION_KEY,
     queryFn: async () => {
       try {
         const res = await subscriptionsService.getMine();
         return res.data;
-      } catch {
-        return null;
+      } catch (err) {
+        // 404 means no subscription exists — this is valid, not an error
+        if (isNotFound(err)) return null;
+        throw err;
       }
     },
     enabled: !!user,
@@ -63,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     retry: false,
   });
 
-  const isLoading = userLoading || (user && subLoading);
+  const isLoading = userLoading || (user ? subLoading : false);
 
   const login = useCallback(
     (userData: AuthUser) => {
@@ -120,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user: userWithSubscription,
         isLoading,
-        isAuthenticated: !!user,
+        isAuthenticated: Boolean(user),
         login,
         logout,
         updateUser,
