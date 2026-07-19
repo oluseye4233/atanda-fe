@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { profileService } from "@/services/profile.service";
 import { getApiErrorMessage } from "@/lib/apiError";
-import { User, Mail, Briefcase, Building2, MapPin, Award, Save } from "lucide-react";
+import { User, Mail, Building2, MapPin, Award, Save } from "lucide-react";
 
 interface ProfileTabProps {
   user: ReturnType<typeof useAuth>["user"];
@@ -14,24 +14,24 @@ export function ProfileTab({ user, updateUser }: ProfileTabProps) {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [form, setForm] = useState({
-    name: "",
-    role: "",
-    department: "",
-    location: "",
-    seniority: "",
-  });
+      name: "",
+      role: "",
+      department: "",
+      location: "",
+      seniority: "",
+    });
 
   useEffect(() => {
-    if (user) {
-      setForm({
-        name: user.name || "",
-        role: user.role || "",
-        department: user.department || "",
-        location: user.location || "",
-        seniority: user.seniority || "",
-      });
-    }
-  }, [user]);
+      if (user) {
+        setForm({
+          name: user.name || "",
+          role: user.role || "",
+          department: user.department || "",
+          location: user.location || "",
+          seniority: user.seniority || "",
+        });
+      }
+    }, [user]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -48,12 +48,12 @@ export function ProfileTab({ user, updateUser }: ProfileTabProps) {
   };
 
   const fields = [
-    { key: "name", label: "Full Name", icon: User, value: form.name },
-    { key: "role", label: "Role / Title", icon: Briefcase, value: form.role },
-    { key: "department", label: "Company/Department", icon: Building2, value: form.department },
-    { key: "seniority", label: "Seniority Level", icon: Award, value: form.seniority },
-    { key: "location", label: "Location", icon: MapPin, value: form.location },
-  ];
+      { key: "name", label: "Full Name", icon: User, value: form.name },
+      { key: "role", label: "Role / Title", icon: User, value: form.role, readOnly: true },
+      { key: "department", label: "Company/Department", icon: Building2, value: form.department },
+      { key: "seniority", label: "Seniority Level", icon: Award, value: form.seniority },
+      { key: "location", label: "Location", icon: MapPin, value: form.location },
+    ];
 
   return (
     <div className="space-y-6">
@@ -88,29 +88,30 @@ export function ProfileTab({ user, updateUser }: ProfileTabProps) {
         </div>
 
         <div className="space-y-4">
-          {fields.map(({ key, label, icon: Icon, value }) => (
-            <div key={key} className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                <Icon className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div className="flex-1">
-                <label className="text-[10px] uppercase font-mono text-muted-foreground tracking-widest block mb-1">{label}</label>
-                {editing ? (
-                  <input
-                    data-testid={`input-profile-${key}`}
-                    type="text"
-                    value={value}
-                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                    className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                  />
-                ) : (
-                  <p className="text-white font-mono text-sm" data-testid={`text-profile-${key}`}>
-                    {value || "—"}
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
+          {fields.map(({ key, label, icon: Icon, value, readOnly }) => (
+                      <div key={key} className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                          <Icon className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-[10px] uppercase font-mono text-muted-foreground tracking-widest block mb-1">{label}</label>
+                          {editing ? (
+                            <input
+                              data-testid={`input-profile-${key}`}
+                              type="text"
+                              value={value}
+                              onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                              readOnly={readOnly}
+                              className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                            />
+                          ) : (
+                            <p className="text-white font-mono text-sm" data-testid={`text-profile-${key}`}>
+                              {value || "—"}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
 
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">

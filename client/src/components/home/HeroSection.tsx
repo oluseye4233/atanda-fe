@@ -56,7 +56,7 @@ export function HeroSection() {
             <br />
             Know your <span className="text-destructive">risk</span>.
             <br />
-            Know your <span className="text-primary">next move.</span>.
+            Know your <span className="text-primary">next move.</span>
           </motion.h1>
 
           <motion.div
