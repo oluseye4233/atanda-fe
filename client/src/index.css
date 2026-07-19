@@ -120,9 +120,9 @@
   .font-display {
     font-family: var(--font-sans);
   }
-  [data-testid="section-hero"] .font-display {
+  /*[data-testid="section-hero"] .font-display {
     font-family: var(--font-display);
-  }
+  }*/
 
   /* 3D flip-card utilities (used by CCGE Arena cards) */
   .perspective-1200 {

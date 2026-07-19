@@ -23,6 +23,7 @@ import PrivacyPage from "@/pages/legal/privacy";
 import TermsPage from "@/pages/legal/terms";
 import PaymentSuccessPage from "@/pages/payments/success";
 import PaymentFailedPage from "@/pages/payments/failed";
+import NotFound from "@/pages/not-found";
 
 // ── Authenticated app — ONE lazy chunk, loaded on first protected navigation ──
 const AuthenticatedApp = lazy(() => import("@/app/AuthenticatedApp"));
@@ -57,7 +58,7 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <Suspense fallback={<TopLoadingBar />}>
-                        <AuthenticatedApp />
+                        <AuthenticatedApp />                      
                       </Suspense>
                     </ProtectedRoute>
                   }

@@ -49,3 +49,11 @@ export function getApiErrorMessage(err: unknown, fallback = "Something went wron
   if (err instanceof Error && err.message.trim()) return err.message;
   return fallback;
 }
+
+/**
+ * Checks if an error is a 404 Not Found.
+ * Used to distinguish "no subscription" from other API errors.
+ */
+export function isNotFound(err: unknown): boolean {
+  return isAxiosError(err) && err.response?.status === 404;
+}

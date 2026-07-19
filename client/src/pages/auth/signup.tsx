@@ -61,12 +61,7 @@ export default function SignupPage() {
           <span className="text-primary">intelligently mapped.</span>
         </>
       }
-      blurb="Upload your CV, get your JST Index score, see where AI threatens your role, and discover your highest-ROI next move — all in under a minute."
-      bullets={[
-        { label: "Full CV analysis & JST score" },
-        { label: "AI vulnerability classification" },
-        { label: "3 pivot pathway suggestions" },
-      ]}
+      blurb="Upload your CV, get your JST Index score, see where AI threatens your role, and discover your highest-ROI next move."
     >
       <div className="mb-8">
         <h1 className="font-sans font-bold text-2xl text-white mb-1.5 tracking-tight">
