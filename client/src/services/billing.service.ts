@@ -20,6 +20,7 @@ export interface CheckoutSession {
   status: "pending" | "completed" | "failed" | "canceled";
   externalSessionId: string | null;
   institution: string | null;
+  redirectUrl?: string;
 }
 
 export interface CheckoutCompletionResponse {

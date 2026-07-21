@@ -47,6 +47,16 @@ export const SUBSCRIPTION_PLANS = {
     features: ["Unlimited uploads", "Full JST Dashboard", "12-Vector Radar", "Career Pathways", "FORGE Cards", "Executive Report", "Context Craft Integration", "Institution Dashboard", "Suggested Training Providers"],
     limits: { uploadsPerMonth: -1, dashboardAccess: true, pathwaysAccess: true, enterpriseAccess: false, reportAccess: true, forgeCards: true, trainingProviderAccess: true },
   },
+  INSTITUTION: {
+    key: "INSTITUTION",
+    label: "Institution",
+    type: "school",
+    price: 0,
+    period: "custom",
+    color: "#AA44FF",
+    features: ["Unlimited uploads", "Full JST Dashboard", "12-Vector Radar", "Career Pathways", "FORGE Cards", "Executive Report", "Context Craft Integration", "Institution Dashboard", "Suggested Training Providers"],
+    limits: { uploadsPerMonth: -1, dashboardAccess: true, pathwaysAccess: true, enterpriseAccess: false, reportAccess: true, forgeCards: true, trainingProviderAccess: true },
+  },
   ENTERPRISE: {
     key: "ENTERPRISE",
     label: "Enterprise",
