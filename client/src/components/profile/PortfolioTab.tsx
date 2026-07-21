@@ -9,7 +9,7 @@ interface PortfolioTabProps {
   onLoadGuin: () => Promise<void>;
 }
 
-export function PortfolioTab({ matchedCardIds, guin, loadGuin }: PortfolioTabProps) {
+export function PortfolioTab({ matchedCardIds, guin, onLoadGuin: loadGuin }: PortfolioTabProps) {
   return (
     <div className="space-y-6">
       {matchedCardIds !== null && (
