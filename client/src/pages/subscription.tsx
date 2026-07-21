@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/useAuth";
-import { getApiErrorMessage } from "@/lib/apiError";
+import { getApiErrorMessage, isNotFound } from "@/lib/apiError";
 import { subscriptionsService } from "@/services/subscriptions.service";
 import { plansService } from "@/services/plans.service";
 import type { Plan } from "@/types/plans";
-import type { CreateSubscriptionBody } from "@/types/subscriptions";
+import type { Subscription, CreateSubscriptionBody } from "@/types/subscriptions";
 import { Building2, Check, Zap, ArrowRight, CheckCircle2, Shield, AlertTriangle } from "lucide-react";
 
 const DEFAULT_COLOR = "hsl(188 86% 53%)";
@@ -23,6 +23,26 @@ export default function SubscriptionPage() {
     queryFn: () => plansService.getPublic().then((res) => res.data),
     staleTime: 1000 * 60 * 5,
   });
+
+  // Fetch subscription data to ensure we have the latest
+  const { data: subscriptionData } = useQuery<Subscription | null>({
+    queryKey: ["/subscriptions/me"],
+    queryFn: async () => {
+      try {
+        const res = await subscriptionsService.getMine();
+        return res.data;
+      } catch (err) {
+        if (isNotFound(err)) return null;
+        throw err;
+      }
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60,
+    retry: false,
+  });
+
+  // Resolve the effective plan UUID: whoami subscription > /subscriptions/me > null
+  const effectivePlanId = user?.subscription?.plan?.planId ?? subscriptionData?.plan?.planId ?? null;
 
   const handleSubscribe = async (planId: string) => {
     if (!user) {
@@ -110,9 +130,9 @@ export default function SubscriptionPage() {
   }
 
   const plans = plansQuery.data;
-  const currentPlanId = user?.subscriptionPlan || null;
+  const currentPlanId = effectivePlanId;
   const currentPlanData = plans.find((p) => p.id === currentPlanId) || plans[0];
-  const isSubscribed = user?.subscriptionPlan && user.subscriptionPlan !== "INDIVIDUAL_FREE";
+  const isSubscribed = !!(effectivePlanId);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">

@@ -5,16 +5,23 @@ export type { PaginationParams, PaginatedResponse };
 export type SubscriptionStatus = "active" | "inactive";
 export type SubscriptionDuration = "monthly" | "yearly";
 
+export interface SubscriptionPlanSummary {
+  planId: string;
+  title: string;
+}
+
 export interface Subscription {
   id: string;
   userId: string;
   planId: string;
   status: SubscriptionStatus | null;
+  stripeSubscriptionId: string | null;
   startDate: string | null;
   endDate: string | null;
   duration: number | null;
   createdAt: string;
   updatedAt: string;
+  plan?: SubscriptionPlanSummary | null;
 }
 
 export interface CreateSubscriptionBody {

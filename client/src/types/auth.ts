@@ -3,6 +3,26 @@
 export type UserRole = "user" | "admin" | "staff";
 export type UserType = "free" | "premium";
 
+// ── Subscription payload nested inside whoami ─────────────────────────
+
+export interface WhoamiSubscriptionPlan {
+  planId: string;
+  title: string;
+}
+
+export interface WhoamiSubscription {
+  id: string;
+  userId: string;
+  status: string;
+  stripeSubscriptionId: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  duration: number | null;
+  createdAt: string;
+  updatedAt: string;
+  plan: WhoamiSubscriptionPlan;
+}
+
 // ── Shared response fragments ─────────────────────────────────────────────────
 
 interface TimedMessageResponse {
@@ -28,13 +48,18 @@ export interface AuthUser {
   name: string;
   type: UserType;
   role: UserRole;
-  planId: string | null;
   stripeCustomerId: string | null;
   lastLogin: string | null;
   isActive: boolean | null;
   isVerified: boolean | null;
   createdAt: string;
   updatedAt: string;
+
+  /** Nested subscription payload available in whoami (absent for free users). */
+  subscription?: WhoamiSubscription | null;
+
+  /** Plan UUID from subscription (if any). Used to match against Plan objects from /v1/plans/public. */
+  planId: string | null;
 
   // App-layer fields — not returned by /auth/* but used across the UI.
   // Populated from other endpoints and merged into the auth cache via updateUser().
@@ -44,7 +69,12 @@ export interface AuthUser {
   location?: string | null;
   institution?: string | null;
   contextCraftCertLevel?: string | null;
+
+  /** Derived subscription-plan key (e.g. "INDIVIDUAL_FREE", "INSTITUTION").
+   *  Populated from the nested `subscription.plan.title` in AuthContext. */
   subscriptionPlan?: string | null;
+  /** Derived subscription status (e.g. "active", "inactive").
+   *  Populated from the nested `subscription.status` in AuthContext. */
   subscriptionStatus?: string | null;
 }
 
