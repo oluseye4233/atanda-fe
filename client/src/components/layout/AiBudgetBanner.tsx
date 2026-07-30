@@ -26,7 +26,9 @@ export function AiBudgetBanner() {
   if (data.ratioPct < data.upgradeAtPct) return null;
 
   const hardStop = data.ratioPct >= data.hardStopAtPct;
-  const ctaHref = plan === "ENTERPRISE" ? "/contact" : "/subscription";
+  const isEnterprise = plan.toLowerCase().includes("enterprise");
+  const ctaHref = isEnterprise ? "/contact" : "/subscription";
+  const planLabel = plan.toLowerCase();
 
   return (
     <div
@@ -46,7 +48,7 @@ export function AiBudgetBanner() {
           )}
           <span data-testid="text-ai-budget-message">
             {hardStop
-              ? `AI cap reached — ${data.ratioPct}% of your ${plan.replace("_", " ").toLowerCase()} budget consumed.`
+              ? `AI cap reached — ${data.ratioPct}% of your ${planLabel} budget consumed.`
               : `${data.ratioPct}% of your AI budget used. Upgrade to keep generating.`}
           </span>
         </div>
@@ -59,7 +61,7 @@ export function AiBudgetBanner() {
           }
           data-testid="link-ai-budget-upgrade"
         >
-          {plan === "ENTERPRISE" ? "Contact sales" : "Upgrade plan"}
+          {isEnterprise ? "Contact sales" : "Upgrade plan"}
         </Link>
       </div>
     </div>

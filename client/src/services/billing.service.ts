@@ -1,8 +1,7 @@
 import { apiClient } from "./api";
-import type { SubscriptionPlan } from "@shared/schema";
 
 export interface StartCheckoutBody {
-  plan: SubscriptionPlan;
+  plan: string;
   institution?: string;
 }
 
@@ -15,7 +14,7 @@ export interface CheckoutStartResponse {
 export interface CheckoutSession {
   id: string;
   userId: string;
-  plan: SubscriptionPlan;
+  plan: string;
   amountCents: number;
   status: "pending" | "completed" | "failed" | "canceled";
   externalSessionId: string | null;

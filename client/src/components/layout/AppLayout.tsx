@@ -70,7 +70,7 @@ const ALL_NAV_GROUPS: FlaggedNavGroup[] = [
     items: [
       { name: "Intelligence Hub", href: "/dashboard", icon: BarChart3, hint: "Your scores & insights", flag: null },
       { name: "Upload CV", href: "/upload", icon: Upload, hint: "Run a new assessment", flag: null },
-      { name: "ARK Resume", href: "/ark-resume", icon: FileText, hint: "ATS-optimized verified resume", flag: "arkResume" },
+      { name: "ARK Resume", href: "/ark-resume", icon: FileText, hint: "ATS-optimized verified resume", flag: null },
       // ── Out of MVP scope ──
       // { name: "Book Companion", href: "/book", icon: BookOpen, hint: "Context Craft reading journey", flag: "bookCompanion" },
     ],

@@ -5,7 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/useAuth";
 import { getApiErrorMessage } from "@/lib/apiError";
 import { billingService, type CheckoutSession } from "@/services/billing.service";
-import { SUBSCRIPTION_PLANS } from "@shared/schema";
+import { plansService } from "@/services/plans.service";
+import type { Plan } from "@/types/plans";
 import { CreditCard, Lock, X, CheckCircle2, AlertTriangle, Loader2, ArrowRight } from "lucide-react";
 
 type Step = "loading" | "form" | "processing" | "complete" | "failed" | "error";
@@ -116,7 +117,27 @@ export default function CheckoutPage() {
     }
   }, [isReturnFromStripe, sessionIdFromUrl, navigate, updateUser]);
 
-  const planData = session ? SUBSCRIPTION_PLANS[session.plan] : null;
+  const { data: publicPlans } = useQuery<Plan[]>({
+    queryKey: ["/v1/plans/public"],
+    queryFn: async () => {
+      try {
+        return (await plansService.getPublic()).data;
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const matchedPlan = publicPlans && session?.plan
+    ? publicPlans.find((p) => {
+        if (p.id === session.plan) return true;
+        const normalize = (s: string) => s.toLowerCase().replace(/[_-]/g, " ");
+        return normalize(p.title) === normalize(session.plan);
+      })
+    : null;
+
+  const planLabel = matchedPlan?.title ?? session?.plan ?? "Subscription";
   const dollars = session ? (session.amountCents / 100).toFixed(2) : "0.00";
 
   return (
@@ -148,7 +169,7 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {displayStep === "form" && session && planData && (
+        {displayStep === "form" && session && (
           <div className="p-8 space-y-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -162,14 +183,14 @@ export default function CheckoutPage() {
 
             <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex justify-between items-center" data-testid="card-checkout-summary">
               <div>
-                <p className="font-display font-bold text-white" data-testid="text-checkout-plan">{planData.label}</p>
-                <p className="text-xs text-muted-foreground font-mono mt-1">Billed {planData.period}ly · Test mode</p>
+                <p className="font-display font-bold text-white" data-testid="text-checkout-plan">{planLabel}</p>
+                <p className="text-xs text-muted-foreground font-mono mt-1">Subscription plan · Test mode</p>
                 {session.externalSessionId && (
                   <p className="text-[10px] text-muted-foreground/70 font-mono mt-1" data-testid="text-checkout-session-id">{session.externalSessionId}</p>
                 )}
               </div>
               <p className="text-2xl font-display font-black text-white" data-testid="text-checkout-amount">
-                ${dollars}<span className="text-sm text-muted-foreground">/{planData.period}</span>
+                ${dollars}
               </p>
             </div>
 
