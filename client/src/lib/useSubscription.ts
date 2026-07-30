@@ -126,5 +126,11 @@ export function useSubscription() {
     canAccessForgeCards: limits.forgeCards,
     canAccessTraining: limits.trainingProviderAccess,
     hasUnlimitedUploads: limits.uploadsPerMonth === -1,
+    // Full ARK RESUME is a Pro/Architect/Schools/Institution feature per the
+    // public plan catalog. Derived by title because `planRule` is not returned.
+    canAccessArkResume:
+      ["Pro", "Architect", "Schools", "Institution"].includes(
+        effectivePlan?.title ?? "",
+      ) || (effectivePlan?.planRule?.arkResume ?? false),
   };
 }
