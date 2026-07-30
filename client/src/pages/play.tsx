@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCcge } from "@/hooks/useCcge";
 import { ccgeService } from "@/services/ccge.service";
 import { getApiErrorMessage } from "@/lib/apiError";
 import { Button } from "@/components/ui/button";
@@ -36,12 +37,7 @@ const PILLAR_RATIONALE: Record<string, string> = {
   SuperPrompt: "Composite play covering all four KCSE context types.",
 };
 
-const TIER_REWARD: Record<string, string> = {
-  Bronze: "Foundation pass — earns Bronze certification at JCSE 30+.",
-  Silver: "Solid prompt craft — Silver certification unlocks at JCSE 36+.",
-  Gold: "Senior tier — Gold certification gates SPHINX publishing (JCSE 43+).",
-  Platinum: "Apex tier — Platinum certification at JCSE 48+ marks top 1%.",
-};
+
 
 const TIER_COLORS: Record<string, string> = {
   Bronze: "from-amber-700 to-orange-600",
@@ -81,9 +77,9 @@ type ActiveSession = {
 
 export default function PlayPage() {
   const { user } = useAuth();
-  const [scenarios, setScenarios] = useState<CcgeScenario[]>([]);
-  const [cards, setCards] = useState<CcgeCardType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { cards: rawCards, scenarios: rawScenarios, isLoading } = useCcge();
+  const cards = rawCards ?? [];
+  const scenarios = rawScenarios ?? [];
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<ActiveSession | null>(null);
   const [activeScenario, setActiveScenario] = useState<CcgeScenario | null>(null);
@@ -98,26 +94,11 @@ export default function PlayPage() {
 
   const cardMap = useMemo(() => new Map(cards.map((c) => [c.id, c])), [cards]);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    Promise.all([ccgeService.getScenarios(), ccgeService.getCards()])
-      .then(([s, c]) => {
-        if (cancelled) return;
-        setScenarios(s.data.data);
-        setCards(c.data.data);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(getApiErrorMessage(err, "Couldn't load CCGE scenarios."));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const availableTiers = useMemo(() => {
+    const seen = new Set(scenarios.map((s) => s.tier));
+    const order = ["Bronze", "Silver", "Gold", "Platinum"];
+    return order.filter((t) => seen.has(t));
+  }, [scenarios]);
 
   const startSession = async (scenarioId: string) => {
     if (!user?.id) {
@@ -211,9 +192,9 @@ export default function PlayPage() {
             <div className="flex items-center gap-4">
               <Trophy className="h-12 w-12 text-primary" />
               <div>
-                <p className="text-xs uppercase tracking-widest text-muted-foreground font-mono">JCSE Final Score</p>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground font-mono">Round Score</p>
                 <h1 className="text-4xl sm:text-5xl font-display font-bold text-primary tabular-nums" data-testid="text-jcse-score">{breakdown.final}</h1>
-                <p className="text-sm text-muted-foreground mt-1">out of 50.0</p>
+                <p className="text-sm text-muted-foreground mt-1">out of 50</p>
               </div>
             </div>
             <div className="text-right">
@@ -227,7 +208,7 @@ export default function PlayPage() {
               ) : (
                 <div className="text-muted-foreground font-mono text-sm">
                   <AlertCircle className="inline h-4 w-4 mr-1" />
-                  Below Bronze threshold — try again
+                  No tier earned this round — try again
                 </div>
               )}
             </div>
@@ -236,7 +217,7 @@ export default function PlayPage() {
 
         {/* Flywheel impact */}
         <div className="grid md:grid-cols-3 gap-4">
-          <div className="glass-card p-5 rounded-lg neon-border">
+          <div className="glass-card p-5 rounded-xl border border-secondary/30">
             <div className="flex items-center gap-2 text-cyan-400 mb-2">
               <Zap className="h-4 w-4" />
               <span className="text-xs uppercase tracking-widest font-mono">ARK Score Boost</span>
@@ -251,7 +232,7 @@ export default function PlayPage() {
             </p>
           </div>
 
-          <div className={cn("glass-card p-5 rounded-lg", flywheel.certUpgradedTo ? "border-2 border-fuchsia-500/50" : "")}>
+          <div className={cn("glass-card p-5 rounded-xl border", flywheel.certUpgradedTo ? "border-fuchsia-500/50" : "border-white/10")}>
             <div className="flex items-center gap-2 text-fuchsia-400 mb-2">
               <ShieldCheck className="h-4 w-4" />
               <span className="text-xs uppercase tracking-widest font-mono">Cert Upgrade</span>
@@ -269,13 +250,13 @@ export default function PlayPage() {
               <>
                 <div className="text-base text-muted-foreground font-mono">No upgrade this round</div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Need JCSE ≥ 30 (Bronze), 36 (Silver), 43 (Gold), 48 (Platinum)
+                  Keep practicing — the next tier is earned by finishing strong rounds.
                 </p>
               </>
             )}
           </div>
 
-          <div className="glass-card p-5 rounded-lg">
+          <div className="glass-card p-5 rounded-xl border border-white/10">
             <div className="flex items-center gap-2 text-amber-400 mb-2">
               <Coins className="h-4 w-4" />
               <span className="text-xs uppercase tracking-widest font-mono">Token Efficiency</span>
@@ -289,9 +270,9 @@ export default function PlayPage() {
           </div>
         </div>
 
-        {/* KCSE breakdown */}
-        <div className="glass-card p-6 rounded-xl">
-          <h2 className="text-sm font-mono uppercase tracking-widest text-muted-foreground mb-4">KCSE Breakdown</h2>
+        {/* Round score breakdown */}
+        <div className="glass-card p-6 rounded-xl border border-white/10">
+          <h2 className="text-sm font-mono uppercase tracking-widest text-muted-foreground mb-4">Score Breakdown</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { label: "Knowledge", value: breakdown.knowledge, weight: "30%" },
@@ -351,10 +332,10 @@ export default function PlayPage() {
 
         {/* Judge narrative (present only when useClaude was requested and allowed) */}
         {result.judge ? (
-          <div className="glass-card p-6 rounded-xl" data-testid="card-judge-result">
+          <div className="glass-card p-6 rounded-xl border border-white/10" data-testid="card-judge-result">
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">AI Judge Feedback</span>
+              <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Judge Feedback</span>
             </div>
             <p className="text-sm text-foreground/90 leading-relaxed">{result.judge.narrative}</p>
             <div className="mt-4 grid sm:grid-cols-2 gap-4">
@@ -377,7 +358,7 @@ export default function PlayPage() {
         <div className="flex gap-3">
           <Button onClick={resetToLobby} className="flex-1" data-testid="button-back-to-lobby">
             <ArrowRight className="h-4 w-4 mr-2" />
-            Back to Arena
+            Back to Games
           </Button>
           <Button variant="outline" onClick={() => activeScenario && startSession(activeScenario.id)} className="flex-1" data-testid="button-replay-scenario">
             Replay this scenario
@@ -400,18 +381,18 @@ export default function PlayPage() {
     if (stage === "design") {
       return (
         <div className="max-w-4xl mx-auto space-y-6" data-testid="ccge-design-view">
-          <div className="glass-card p-6 rounded-xl">
+          <div className="glass-card p-6 rounded-xl border border-white/10">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="h-4 w-4 text-primary" />
               <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
                 Final Stage — Design Your Card
               </span>
             </div>
-            <h1 className="text-2xl font-display font-bold text-foreground">Author your custom prompt</h1>
+            <h1 className="text-2xl font-display font-bold text-foreground">Write your final card</h1>
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-              Name your card and write the actual prompt (e.g. a SYSTEM prompt) for{" "}
-              <span className="text-foreground font-medium">{activeScenario.title}</span>. This authored
-              card is the final, scored artifact — craft it well.
+              Name your card and write the prompt for{" "}
+              <span className="text-foreground font-medium">{activeScenario.title}</span>. This final
+              card is what gets scored — make it count.
             </p>
             <div className="flex flex-wrap gap-1.5 mt-3">
               <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-widest mr-1">Target Pillars:</span>
@@ -424,9 +405,9 @@ export default function PlayPage() {
           </div>
 
           {/* Selected cards reference */}
-          <div className="glass-card p-5 rounded-xl">
+          <div className="glass-card p-5 rounded-xl border border-white/10">
             <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-              Your Selected Cards — {playedCards.length}
+              Selected Cards — {playedCards.length}
             </span>
             <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-3" data-testid="design-selected-cards">
               {playedCards.map((c, i) => (
@@ -436,7 +417,7 @@ export default function PlayPage() {
           </div>
 
           {/* Authoring form */}
-          <div className="glass-card p-6 rounded-xl space-y-5">
+          <div className="glass-card p-6 rounded-xl border border-white/10 space-y-5">
             <div>
               <label htmlFor="card-name" className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
                 Card Name
@@ -546,7 +527,7 @@ export default function PlayPage() {
         </div>
 
         {/* Played slot */}
-        <div className="glass-card p-6 rounded-xl border-2 border-dashed border-primary/30 min-h-[180px]">
+        <div className="glass-card p-6 rounded-xl border-2 border-dashed border-primary/30 min-h-45">
           <div className="flex items-center gap-2 mb-3">
             <Target className="h-4 w-4 text-primary" />
             <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
@@ -612,42 +593,35 @@ export default function PlayPage() {
   // ─── LOBBY VIEW ───────────────────────────────────────
   return (
     <div className="max-w-6xl mx-auto space-y-6" data-testid="ccge-lobby-view">
-      <div className="glass-card p-6 rounded-xl neon-border">
+      <div className="glass-card p-6 rounded-xl border border-secondary/30">
         <div className="flex items-center gap-3 mb-3">
           <Gamepad2 className="h-7 w-7 text-primary" />
-          <h1 className="text-2xl font-display font-bold tracking-wide text-primary">CCGE Arena</h1>
+          <h1 className="text-2xl font-display font-bold tracking-wide text-primary">Skill Games</h1>
         </div>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          The <span className="text-foreground font-semibold">Context Craft Game Engine</span> measures your AI engineering skill in real time.
-          Pick a scenario, play prompt-engineering cards from your hand, score JCSE 30+ to earn certifications, and watch your ARK Score climb.
+          Pick a scenario, play cards that build the strongest prompt, then write your own final card.
+          Each round improves your prompt-craft score, raises your CCMI, and pushes your ARK Score higher.
         </p>
-        <div className="grid sm:grid-cols-4 gap-3 mt-5">
-          <div className="text-center p-3 rounded-lg bg-amber-700/10 border border-amber-600/40">
-            <Crown className="h-5 w-5 mx-auto text-amber-500 mb-1" />
-            <div className="font-display text-amber-400 text-sm">Bronze</div>
-            <div className="text-[10px] font-mono text-muted-foreground">JCSE 30–35</div>
-          </div>
-          <div className="text-center p-3 rounded-lg bg-slate-400/10 border border-slate-400/40">
-            <Crown className="h-5 w-5 mx-auto text-slate-300 mb-1" />
-            <div className="font-display text-slate-300 text-sm">Silver</div>
-            <div className="text-[10px] font-mono text-muted-foreground">JCSE 36–42</div>
-          </div>
-          <div className="text-center p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/40">
-            <Crown className="h-5 w-5 mx-auto text-yellow-400 mb-1" />
-            <div className="font-display text-yellow-300 text-sm">Gold</div>
-            <div className="text-[10px] font-mono text-muted-foreground">JCSE 43–47</div>
-          </div>
-          <div className="text-center p-3 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/40">
-            <Crown className="h-5 w-5 mx-auto text-fuchsia-400 mb-1" />
-            <div className="font-display text-fuchsia-300 text-sm">Platinum</div>
-            <div className="text-[10px] font-mono text-muted-foreground">JCSE 48–50</div>
-          </div>
+        <div className="flex flex-wrap gap-3 mt-5">
+          {availableTiers.map((tier) => (
+            <div
+              key={tier}
+              className={cn(
+                "flex-1 min-w-30 text-center p-3 rounded-lg border-2 bg-linear-to-br text-background",
+                TIER_BORDER[tier],
+                TIER_COLORS[tier],
+              )}
+            >
+              <Crown className="h-5 w-5 mx-auto mb-1" />
+              <div className="font-display text-sm font-bold">{tier}</div>
+            </div>
+          ))}
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground mr-2">Filter Tier:</span>
-        {["All", "Bronze", "Silver", "Gold", "Platinum"].map((t) => (
+        <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground mr-2">Filter by tier:</span>
+        {["All", ...availableTiers].map((t) => (
           <Button
             key={t}
             variant={tierFilter === t ? "default" : "outline"}
@@ -660,10 +634,10 @@ export default function PlayPage() {
         ))}
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-16 text-muted-foreground">
           <Loader2 className="h-6 w-6 animate-spin mr-2" />
-          Loading scenarios...
+          Loading Skill Games...
         </div>
       ) : error ? (
         <div className="glass-card p-6 rounded-xl border border-destructive/40 text-destructive">
@@ -672,7 +646,7 @@ export default function PlayPage() {
         </div>
       ) : filteredScenarios.length === 0 ? (
         <div className="glass-card p-8 rounded-xl text-center text-muted-foreground">
-          No scenarios for this tier yet.
+          No scenarios in this tier yet. Try another difficulty.
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
@@ -692,7 +666,7 @@ export default function PlayPage() {
                       {s.tier}
                     </Badge>
                     <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                      Diff {s.difficulty}/5 · {s.tokenBudget}t budget
+                      Difficulty {s.difficulty}/5 · {s.tokenBudget} tokens
                     </span>
                   </div>
                   <h3 className="font-display font-bold text-lg text-foreground" data-testid={`scenario-title-${s.id}`}>{s.title}</h3>
@@ -706,7 +680,7 @@ export default function PlayPage() {
                   </div>
                   <Button onClick={() => startSession(s.id)} disabled={!user} data-testid={`button-start-${s.id}`}>
                     <Gamepad2 className="h-4 w-4 mr-2" />
-                    Start Session
+                    Start Round
                   </Button>
                 </div>
               }
@@ -720,7 +694,7 @@ export default function PlayPage() {
                   </div>
                   <h3 className="font-display font-bold text-sm text-foreground leading-tight">{s.title}</h3>
                   <div className="text-[11px] font-mono text-muted-foreground leading-relaxed">
-                    {TIER_REWARD[s.tier] ?? "Earn certification by passing the KCSE threshold."}
+                    Scenario tier: {s.tier}
                   </div>
                   <div className="space-y-1.5 flex-1 overflow-y-auto">
                     <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
@@ -739,7 +713,7 @@ export default function PlayPage() {
                   </div>
                   <div className="flex items-center justify-between text-[10px] font-mono pt-2 border-t border-white/10">
                     <span className="text-muted-foreground">
-                      Difficulty {s.difficulty}/5 · {s.tokenBudget}t budget
+                      Difficulty {s.difficulty}/5 · {s.tokenBudget} tokens
                     </span>
                     <Button
                       size="sm"

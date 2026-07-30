@@ -46,16 +46,16 @@ function FrontFaceContent({ card, variant, index, typeClass }: FrontFaceContentP
       </div>
 
       <div className="flex items-center justify-between text-[10px] font-mono pt-1 border-t border-current/20">
-        <span className="flex items-center gap-1">
-          <Award className="h-3 w-3" /> KCSE {card.baseKcse}
+        <span className="flex items-center gap-1" title="Base score for this card">
+          <Award className="h-3 w-3" /> Base score {card.baseKcse}
         </span>
-        <span className="flex items-center gap-1">
-          <Coins className="h-3 w-3" /> {card.tokenCost}t
+        <span className="flex items-center gap-1" title="Token cost to play">
+          <Coins className="h-3 w-3" /> {card.tokenCost} tokens
         </span>
       </div>
 
       {variant === "played" && (
-        <div className="text-[10px] opacity-70">Click to remove</div>
+        <div className="text-[10px] opacity-70">Tap to remove</div>
       )}
     </>
   );
@@ -283,10 +283,10 @@ export function CcgeCard({
         >
           <div className="flex justify-between items-start gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <Layers className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+              <Layers className="h-3.5 w-3.5 text-primary shrink-0" />
               <div className="min-w-0">
                 <div className="text-[9px] font-mono uppercase tracking-widest text-primary/80">
-                  Prompt body
+                  Full prompt
                 </div>
                 <div className="font-display font-bold text-sm text-foreground truncate">
                   {card.name}
@@ -298,7 +298,7 @@ export function CcgeCard({
               onClick={toggleFlip}
               aria-label={`Hide prompt for ${card.name}`}
               data-testid={`button-unflip-${card.id}`}
-              className="rounded p-1 border border-primary/30 text-primary/80 hover:bg-primary/10 hover:text-primary transition-colors flex-shrink-0"
+              className="rounded p-1 border border-primary/30 text-primary/80 hover:bg-primary/10 hover:text-primary transition-colors shrink-0"
             >
               <EyeOff className="h-3 w-3" />
             </button>
@@ -311,13 +311,13 @@ export function CcgeCard({
           </div>
 
           <pre className="flex-1 text-[11px] leading-relaxed text-foreground/90 font-mono whitespace-pre-wrap overflow-y-auto p-2.5 rounded bg-black/30 border border-primary/10 scrollbar-thin">
-{card.body ?? "No prompt body on file for this card."}
+{card.body ?? "No prompt text on file for this card."}
           </pre>
 
           <div className="flex items-center justify-between text-[9px] font-mono pt-1 border-t border-primary/10 text-muted-foreground">
             <span className="flex items-center gap-1">
               <Sparkles className="h-2.5 w-2.5 text-primary/70" />
-              KCSE base {card.baseKcse} · {card.tokenCost}t
+              Base score {card.baseKcse} · {card.tokenCost} tokens
             </span>
             {variant === "hand" && !disabled && (
               <button
