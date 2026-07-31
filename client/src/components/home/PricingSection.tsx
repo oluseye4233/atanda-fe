@@ -83,7 +83,7 @@ export function PricingSection() {
     return null;
   }
 
-  const currentPlanId = user?.subscriptionPlan || undefined;
+  const currentPlanId = user?.planId || undefined;
 
   return (
     <section

@@ -70,7 +70,7 @@ export interface AuthUser {
   institution?: string | null;
   contextCraftCertLevel?: string | null;
 
-  /** Derived subscription-plan key (e.g. "INDIVIDUAL_FREE", "INSTITUTION").
+  /** Derived subscription plan title (e.g. "Individual Pro").
    *  Populated from the nested `subscription.plan.title` in AuthContext. */
   subscriptionPlan?: string | null;
   /** Derived subscription status (e.g. "active", "inactive").

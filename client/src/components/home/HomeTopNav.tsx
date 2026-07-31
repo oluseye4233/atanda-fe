@@ -20,6 +20,15 @@ export function HomeTopNav() {
       </div>
 
       <div className="flex items-center gap-1">
+        <a
+          href="/living-resume-oluseye-shay-amusa.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="link-about-me"
+          className="h-8 px-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-150 rounded-md"
+        >
+          About Me
+        </a>
         {!isLoading && !user && (
           <>
             <Link

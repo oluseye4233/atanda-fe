@@ -15,6 +15,8 @@ export interface PlanRule {
   workforceIntel: boolean;
   institutionDashboard: boolean;
   prioritySupport: boolean;
+  /** Full ARK RESUME access. Not currently returned by `/v1/plans/public`, so the client falls back to plan-title gating. */
+  arkResume?: boolean;
 }
 
 // ── Plan object ───────────────────────────────────────────────────────────────

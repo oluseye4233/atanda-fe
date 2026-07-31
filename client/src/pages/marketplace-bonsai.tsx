@@ -43,7 +43,7 @@ const FEATURES = [
 
 export function CommandCentrePage() {
   const { user } = useAuth();
-  const { plan } = useSubscription();
+  const { planData } = useSubscription();
   const [launching, setLaunching] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
 
@@ -53,7 +53,7 @@ export function CommandCentrePage() {
   });
 
   const isConnected = !!config?.connected;
-  const isSubscriber = plan !== "INDIVIDUAL_FREE";
+  const isSubscriber = planData ? planData.monthlyPrice !== "0.00" : false;
 
   async function handleLaunch() {
     setLaunchError(null);

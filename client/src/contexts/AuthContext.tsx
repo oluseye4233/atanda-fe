@@ -9,30 +9,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { authService } from "@/services/auth.service";
 import { subscriptionsService } from "@/services/subscriptions.service";
 import { isNotFound } from "@/lib/apiError";
-import { SUBSCRIPTION_PLANS, type SubscriptionPlan } from "@shared/schema";
 import type { AuthUser, WhoamiSubscription } from "@/types/auth";
 import type { Subscription } from "@/types/subscriptions";
-
-/**
- * Map a plan title returned by whoami to a SubscriptionPlan key.
- * Falls back to INDIVIDUAL_FREE for unrecognised titles.
- */
-function planTitleToKey(title: string | null | undefined): SubscriptionPlan {
-  if (!title) return "INDIVIDUAL_FREE";
-  // Scan SUBSCRIPTION_PLANS for a matching label (case-insensitive)
-  for (const [key, plan] of Object.entries(SUBSCRIPTION_PLANS)) {
-    if (plan.label.toLowerCase() === title.toLowerCase()) {
-      return key as SubscriptionPlan;
-    }
-  }
-  return "INDIVIDUAL_FREE";
-}
-
-/** Derive the plan key from a whoami subscription payload. */
-function whoamiSubToPlanKey(sub: WhoamiSubscription | null | undefined): SubscriptionPlan {
-  if (!sub) return "INDIVIDUAL_FREE";
-  return planTitleToKey(sub.plan?.title);
-}
 
 export type { AuthUser };
 
@@ -137,20 +115,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const userWithSubscription = user
     ? (() => {
         const inlineSub = user.subscription;
-        // Plan UUID from the nested plan object (for matching Plan.id)
+        // Plan UUID from the nested plan object (for matching Plan.id from /v1/plans)
         const planUuid = inlineSub?.plan?.planId ?? subscription?.plan?.planId ?? null;
-        // Derived plan key (for SUBSCRIPTION_PLANS lookup)
-        const derivedPlan = inlineSub
-          ? whoamiSubToPlanKey(inlineSub)
-          : (subscription
-              ? planTitleToKey(subscription.plan?.title ?? null)
-              : "INDIVIDUAL_FREE");
+        // Plan title comes directly from the subscription service — not from a shared schema lookup.
+        const derivedPlanTitle = inlineSub?.plan?.title ?? subscription?.plan?.title ?? null;
         const derivedStatus = inlineSub?.status ?? subscription?.status ?? null;
 
         return {
           ...user,
           planId: planUuid,
-          subscriptionPlan: derivedPlan,
+          subscriptionPlan: derivedPlanTitle,
           subscriptionStatus: derivedStatus,
         };
       })()
