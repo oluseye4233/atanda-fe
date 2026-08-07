@@ -113,6 +113,11 @@ export function useSubscription() {
 
   const limits = effectivePlan ? deriveLimitsFromPlan(effectivePlan) : toLimits(null);
 
+  // Admins bypass every subscription gate. The blocks exist to restrict
+  // features for roles without the required plan — an admin should never be
+  // locked out of dashboard surfaces by a subscription check.
+  const isAdmin = user?.role === "admin";
+
   return {
     /** Current plan object from the public catalog, if matched. */
     planData: currentPlan,
@@ -120,17 +125,19 @@ export function useSubscription() {
     plan: currentPlan?.title ?? user?.subscriptionPlan ?? "Free",
     limits,
     isLoading,
-    canAccessPathways: limits.pathwaysAccess,
-    canAccessEnterprise: limits.enterpriseAccess,
-    canAccessReport: limits.reportAccess,
-    canAccessForgeCards: limits.forgeCards,
-    canAccessTraining: limits.trainingProviderAccess,
-    hasUnlimitedUploads: limits.uploadsPerMonth === -1,
+    canAccessPathways: isAdmin || limits.pathwaysAccess,
+    canAccessEnterprise: isAdmin || limits.enterpriseAccess,
+    canAccessReport: isAdmin || limits.reportAccess,
+    canAccessForgeCards: isAdmin || limits.forgeCards,
+    canAccessTraining: isAdmin || limits.trainingProviderAccess,
+    hasUnlimitedUploads: isAdmin || limits.uploadsPerMonth === -1,
     // Full ARK RESUME is a Pro/Architect/Schools/Institution feature per the
     // public plan catalog. Derived by title because `planRule` is not returned.
     canAccessArkResume:
+      isAdmin ||
       ["Pro", "Architect", "Schools", "Institution"].includes(
         effectivePlan?.title ?? "",
-      ) || (effectivePlan?.planRule?.arkResume ?? false),
+      ) ||
+      (effectivePlan?.planRule?.arkResume ?? false),
   };
 }

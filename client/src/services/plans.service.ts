@@ -28,6 +28,10 @@ export const plansService = {
   remove: (id: string) =>
     apiClient.delete<{ message: string }>(`/plans/${id}`),
 
+  /** POST /v1/plans/:id/sync-stripe — admin/staff */
+  syncStripe: (id: string) =>
+    apiClient.post<Plan>(`/plans/${id}/sync-stripe`),
+
   /** GET /v1/plans/public — public endpoint for landing page pricing */
   getPublic: () =>
     apiClient.get<Plan[]>("/plans/public"),

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import { plansService } from "@/services/plans.service";
@@ -33,7 +34,7 @@ import { toast } from "@/hooks/use-toast";
 
 const PAGE_SIZE = 10;
 
-const RULE_FIELDS: { key: keyof PlanRule; label: string }[] = [
+export const RULE_FIELDS: { key: keyof PlanRule; label: string }[] = [
   { key: "jstScore", label: "JST Score" },
   { key: "fullDashboard", label: "Full Dashboard" },
   { key: "careerPathways", label: "Career Pathways" },
@@ -152,6 +153,7 @@ function toForm(plan: Plan): PlanFormState {
 
 export default function AdminPlans() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -238,6 +240,7 @@ export default function AdminPlans() {
     }
   };
 
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -287,7 +290,11 @@ export default function AdminPlans() {
                 </TableRow>
               ) : (
                 data?.data.map((plan) => (
-                  <TableRow key={plan.id}>
+                  <TableRow
+                    key={plan.id}
+                    className="cursor-pointer hover:bg-primary/5"
+                    onClick={() => navigate(`/plans/${plan.id}`)}
+                  >
                     <TableCell className="font-medium text-white">{plan.title}</TableCell>
                     <TableCell className="font-mono text-xs">${plan.monthlyPrice}</TableCell>
                     <TableCell className="font-mono text-xs">${plan.yearlyPrice}</TableCell>
@@ -295,15 +302,25 @@ export default function AdminPlans() {
                       <StatusBadge status={plan.freeTrial ? "active" : "inactive"} />
                     </TableCell>
                     <TableCell className="font-mono text-xs">{plan.features.length}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => openEdit(plan)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEdit(plan);
+                          }}
+                        >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => setDeleteTarget(plan)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteTarget(plan);
+                          }}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>

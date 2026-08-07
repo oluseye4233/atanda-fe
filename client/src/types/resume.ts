@@ -18,11 +18,15 @@ export interface RiskModifier {
 }
 
 export interface TransferabilityVector {
+  id: string;
+  assessmentId: string;
   subject: string;
   score: number;
 }
 
 export interface PivotOpportunity {
+  id: string;
+  assessmentId: string;
   role: string;
   feasibility: number;
   gapCost: string;
@@ -31,6 +35,7 @@ export interface PivotOpportunity {
 
 export interface UpskillingPlanItem {
   id: string;
+  assessmentId: string;
   phase: "30-Day" | "90-Day" | "12-Month";
   title: string;
   description: string;

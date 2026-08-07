@@ -10,6 +10,7 @@ import AdminDashboard from "@/pages/admin/dashboard";
 import AdminUsers from "@/pages/admin/users";
 import AdminUserDetail from "@/pages/admin/user-detail";
 import AdminPlans from "@/pages/admin/plans";
+import AdminPlanDetail from "@/pages/admin/plan-detail";
 import AdminPaymentsAndSubscriptions from "@/pages/admin/payments";
 import AdminAi from "@/pages/admin/ai";
 import AdminF1000 from "@/pages/admin/f1000";
@@ -25,6 +26,7 @@ export default function AdminApp() {
           <Route path="users" element={<AdminUsers />} />
           <Route path="users/:id" element={<AdminUserDetail />} />
           <Route path="plans" element={<AdminPlans />} />
+          <Route path="plans/:id" element={<AdminPlanDetail />} />
           <Route path="payments" element={<AdminPaymentsAndSubscriptions />} />
           <Route path="ai" element={<AdminAi />} />
           <Route path="f1000" element={<AdminF1000 />} />
