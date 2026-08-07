@@ -22,7 +22,7 @@ export function AiBudgetBanner() {
     refetchInterval: 60_000,
   });
 
-  if (!user || !data || !data.guardrailActive) return null;
+  if (!user || user.role === "admin" || !data || !data.guardrailActive) return null;
   if (data.ratioPct < data.upgradeAtPct) return null;
 
   const hardStop = data.ratioPct >= data.hardStopAtPct;

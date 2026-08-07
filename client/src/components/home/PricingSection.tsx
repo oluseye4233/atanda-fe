@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { plansService } from "@/services/plans.service";
 import { billingService } from "@/services/billing.service";
 import type { Plan } from "@/types/plans";
-import { PricingCard, FeatureComparison } from "./PricingComponents";
+import { PricingCard } from "./PricingComponents";
 
 export function PricingSection() {
   const { user } = useAuth();
@@ -129,8 +129,6 @@ export function PricingSection() {
             />
           ))}
         </div>
-
-        <FeatureComparison plans={plans} sortedPlans={plans} />
       </div>
     </section>
   );

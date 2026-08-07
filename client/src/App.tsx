@@ -28,6 +28,25 @@ import NotFound from "@/pages/not-found";
 // ── Authenticated app — ONE lazy chunk, loaded on first protected navigation ──
 const AuthenticatedApp = lazy(() => import("@/app/AuthenticatedApp"));
 
+// ── Command Center admin app — separate lazy chunk, loaded only on the
+//    command-center subdomain (DNS routing is configured elsewhere).
+const AdminApp = lazy(() => import("@/app/AdminApp"));
+
+const isCommandCenterSubdomain =
+  typeof window !== "undefined" &&
+  window.location.hostname.split(".")[0] === "command-center";
+
+// The admin module, wrapped in auth + suspense. Rendered for every route on
+// the command-center subdomain — including the root, which would otherwise
+// match the public <Home /> route below.
+const adminElement = (
+  <ProtectedRoute>
+    <Suspense fallback={<TopLoadingBar />}>
+      <AdminApp />
+    </Suspense>
+  </ProtectedRoute>
+);
+
 function App() {
   return (
     <ErrorBoundary>
@@ -40,7 +59,9 @@ function App() {
               <ScrollToTop />
               <Routes>
                 {/* ── Public — no sidebar, no auth ─────────────────────── */}
-                  <Route path="/" element={<Home />} />
+                  {/* On the command-center subdomain the root serves the admin
+                      module instead of the public landing page. */}
+                  <Route path="/" element={isCommandCenterSubdomain ? adminElement : <Home />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
                   <Route path="/verify-account" element={<VerifyAccountPage />} />
@@ -53,14 +74,20 @@ function App() {
                   <Route path="/payments/failed" element={<PaymentFailedPage />} />
 
                 {/* ── Everything else → the authenticated bundle ───────── */}
+                {/* On the command-center subdomain, serve the admin module
+                    instead of the regular authenticated app. */}
                 <Route
                   path="/*"
                   element={
-                    <ProtectedRoute>
-                      <Suspense fallback={<TopLoadingBar />}>
-                        <AuthenticatedApp />                      
-                      </Suspense>
-                    </ProtectedRoute>
+                    isCommandCenterSubdomain ? (
+                      adminElement
+                    ) : (
+                      <ProtectedRoute>
+                        <Suspense fallback={<TopLoadingBar />}>
+                          <AuthenticatedApp />
+                        </Suspense>
+                      </ProtectedRoute>
+                    )
                   }
                 />
               </Routes>

@@ -1,4 +1,5 @@
 import { apiClient } from "./api";
+import type { PaginatedResponse, PaginationParams } from "@/types/users";
 import type { Assessment, AnalyzeResponse, ResumeCount } from "@/types/resume";
 
 export const resumeService = {
@@ -41,4 +42,8 @@ export const resumeService = {
   /** GET /v1/resume-counts/me — authenticated */
   getMyCount: () =>
     apiClient.get<ResumeCount>("/resume-counts/me"),
+
+  /** GET /v1/resume-counts — admin/staff */
+  listCounts: (params?: PaginationParams & { id?: string; userId?: string; search?: string }) =>
+    apiClient.get<PaginatedResponse<ResumeCount>>("/resume-counts", { params }),
 };

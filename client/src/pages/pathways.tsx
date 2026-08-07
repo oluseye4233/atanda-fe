@@ -1,18 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { TransferabilityRadar } from "@/components/pathways/TransferabilityRadar";
 import { UpskillingTimeline } from "@/components/pathways/UpskillingTimeline";
 import { SkillGapMatrix } from "@/components/pathways/SkillGapMatrix";
-import { ArrowUpRight, Loader2, Compass, Clock, Target } from "lucide-react";
+import { ArrowUpRight, Loader2, Compass, Clock, Target, RefreshCw, FileUp } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { useSubscription } from "@/lib/useSubscription";
 import { resumeService } from "@/services/resume.service";
+import { getApiErrorMessage, isNotFound } from "@/lib/apiError";
 import UpgradeGate from "@/components/UpgradeGate";
 import { FlippableCard } from "@/components/ui/flippable-card";
 
 function feasibilityNarrative(score: number): string {
   if (score >= 80) return "Strong fit — most core skills already transfer.";
-  if (score >= 60) return "Workable pivot — moderate upskilling required.";
-  if (score >= 40) return "Stretch move — meaningful gaps to close before transition.";
+  if (score >= 60) return "Solid pivot — targeted upskilling closes the gap.";
+  if (score >= 40) return "Moderate lift — plan for a structured transition period.";
   return "Long-haul pivot — treat as a 12+ month roadmap.";
 }
 
@@ -23,13 +25,8 @@ export default function PathwaysPage() {
     queryKey: ["/v1/assessments", user?.id, "latest"],
     queryFn: async () => {
       if (!user) return null;
-
-      try {
-        const response = await resumeService.getLatest(user.id);
-        return response.data;
-      } catch {
-        return null;
-      }
+      const response = await resumeService.getLatest(user.id);
+      return response.data;
     },
     enabled: !!user,
     retry: false,
@@ -50,6 +47,45 @@ export default function PathwaysPage() {
       <div className="w-full max-w-6xl mx-auto min-h-[60vh] flex flex-col items-center justify-center">
         <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
         <p className="font-mono text-sm text-muted-foreground uppercase">Loading Pathway Data...</p>
+      </div>
+    );
+  }
+
+  // 404 — no assessment exists yet. Offer a clear path to create one.
+  if (isNotFound(assessmentQuery.error)) {
+    return (
+      <div className="w-full max-w-6xl mx-auto min-h-[60vh] flex flex-col items-center justify-center text-center space-y-6">
+        <p className="font-mono text-sm text-muted-foreground uppercase">
+          No assessment data found. Upload a résumé first.
+        </p>
+        <Link
+          to="/upload"
+          data-testid="button-pathways-upload"
+          className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-mono uppercase tracking-wider px-6 py-3 text-sm font-medium rounded-lg transition-all hover:-translate-y-0.5"
+        >
+          <FileUp className="h-4 w-4" />
+          Upload Résumé
+        </Link>
+      </div>
+    );
+  }
+
+  // Any other error — surface a retryable failure state.
+  if (assessmentQuery.isError) {
+    return (
+      <div className="w-full max-w-6xl mx-auto min-h-[60vh] flex flex-col items-center justify-center text-center space-y-6">
+        <p className="font-mono text-sm text-muted-foreground uppercase">
+          {getApiErrorMessage(assessmentQuery.error)}
+        </p>
+        <button
+          type="button"
+          onClick={() => assessmentQuery.refetch()}
+          data-testid="button-pathways-retry"
+          className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-mono uppercase tracking-wider px-6 py-3 text-sm font-medium rounded-lg transition-all hover:-translate-y-0.5"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Try Again
+        </button>
       </div>
     );
   }
