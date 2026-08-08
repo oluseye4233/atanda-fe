@@ -13,4 +13,4 @@ attached_assets/*.PDF
 .env
 .env.local
 .env.*.local
-.env.example
+.env.production
