@@ -79,8 +79,40 @@ export function PricingSection() {
     );
   }
 
-  if (error || !plans) {
-    return null;
+  if (error) {
+    return (
+      <section className="bg-[#0d1117] px-6 sm:px-10 py-24" data-testid="section-pricing">
+        <div className="max-w-6xl mx-auto text-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-3 py-1 text-[11px] font-mono tracking-widest text-muted-foreground uppercase mb-4">
+            Pricing
+          </span>
+          <h2 className="font-sans font-bold text-2xl sm:text-3xl text-white mb-3 tracking-tight">
+            Pricing temporarily unavailable
+          </h2>
+          <p className="text-muted-foreground text-sm max-w-sm mx-auto leading-relaxed">
+            We couldn't load the plans right now. Please refresh the page or try again later.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  if (!plans || plans.length === 0) {
+    return (
+      <section className="bg-[#0d1117] px-6 sm:px-10 py-24" data-testid="section-pricing">
+        <div className="max-w-6xl mx-auto text-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-3 py-1 text-[11px] font-mono tracking-widest text-muted-foreground uppercase mb-4">
+            Pricing
+          </span>
+          <h2 className="font-sans font-bold text-2xl sm:text-3xl text-white mb-3 tracking-tight">
+            No plans available
+          </h2>
+          <p className="text-muted-foreground text-sm max-w-sm mx-auto leading-relaxed">
+            Check back soon — we're working on bringing the right options for your career stage.
+          </p>
+        </div>
+      </section>
+    );
   }
 
   const currentPlanId = user?.planId || undefined;

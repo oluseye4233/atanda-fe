@@ -21,17 +21,23 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios";
 
-// In dev, go through the Vite proxy (see vite.config.ts) so requests are
-// same-origin (localhost:5173) and the backend's session cookie is kept by
-// the browser. A direct cross-origin call to api.atanda.ai would require the
-// cookie to be SameSite=None, which the browser drops for cross-site XHRs —
-// login would appear to succeed but every following request would 401.
-export const BASE_URL = import.meta.env.DEV ? "/v1" : "https://api.atanda.ai/v1";
+const appKey = import.meta.env.VITE_APP_KEY;
+
+// Dev MUST go through the Vite proxy (`/v1`) so requests are same-origin and
+// the backend's session cookie is preserved. A direct cross-origin call to
+// the API would drop the cookie and every authenticated request would 401.
+// VITE_API_URL is therefore only used for production builds.
+export const BASE_URL = import.meta.env.DEV
+  ? "/v1"
+  : (import.meta.env.VITE_API_URL?.trim() || "https://api.atanda.ai/v1");
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    appKey: appKey ?? "",
+  },
   timeout: 30_000,
 });
 
