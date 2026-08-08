@@ -30,12 +30,14 @@ import { toast } from "@/hooks/use-toast";
 
 const TIERS = ["Bronze", "Silver", "Gold", "Platinum"] as const;
 
+type Tier = (typeof TIERS)[number];
+
 export default function AdminAi() {
   const qc = useQueryClient();
   const [brief, setBrief] = useState("");
   const [industry, setIndustry] = useState("");
   const [role, setRole] = useState("");
-  const [tierHint, setTierHint] = useState<string>("");
+  const [tierHint, setTierHint] = useState<Tier | "">("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [scenario, setScenario] = useState<GeneratedScenario | null>(null);
 
@@ -70,7 +72,7 @@ export default function AdminAi() {
         brief,
         industry: industry || undefined,
         role: role || undefined,
-        tierHint: (tierHint as GeneratedScenario["tier"]) || undefined,
+        tierHint: (tierHint as Tier) || undefined,
       });
       setScenario(res.data);
     } catch (err) {
@@ -228,7 +230,7 @@ export default function AdminAi() {
             </div>
             <div className="space-y-1.5">
               <Label>Tier hint</Label>
-              <Select value={tierHint} onValueChange={setTierHint}>
+              <Select value={tierHint} onValueChange={(value) => setTierHint(value as Tier | "")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Any" />
                 </SelectTrigger>

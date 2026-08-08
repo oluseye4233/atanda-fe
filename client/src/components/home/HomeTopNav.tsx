@@ -21,7 +21,7 @@ export function HomeTopNav() {
 
       <div className="flex items-center gap-1">
         <a
-          href="/living-resume-oluseye-shay-amusa.html"
+          href="/living-resume-oluseye-shay-amusa/"
           target="_blank"
           rel="noopener noreferrer"
           data-testid="link-about-me"

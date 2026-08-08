@@ -9,3 +9,8 @@ vite.config.ts.*
 attached_assets/*.docx
 attached_assets/*.pdf
 attached_assets/*.PDF
+
+.env
+.env.local
+.env.*.local
+.env.example
