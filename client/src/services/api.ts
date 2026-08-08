@@ -23,6 +23,12 @@ import axios, {
 
 const appKey = import.meta.env.VITE_APP_KEY;
 
+if (import.meta.env.PROD && !appKey) {
+  throw new Error(
+    "VITE_APP_KEY is not set. It must be available when `vite build` runs, not only as a Cloudflare runtime secret.",
+  );
+}
+
 // Dev MUST go through the Vite proxy (`/v1`) so requests are same-origin and
 // the backend's session cookie is preserved. A direct cross-origin call to
 // the API would drop the cookie and every authenticated request would 401.
