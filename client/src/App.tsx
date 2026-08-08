@@ -28,7 +28,7 @@ import NotFound from "@/pages/not-found";
 // ── Authenticated app — ONE lazy chunk, loaded on first protected navigation ──
 const AuthenticatedApp = lazy(() => import("@/app/AuthenticatedApp"));
 
-// ── Command Center admin app — separate lazy chunk, loaded only on the
+// ── Command Center admin app — saparate lazy chunk, loaded only on the
 //    command-center subdomain (DNS routing is configured elsewhere).
 const AdminApp = lazy(() => import("@/app/AdminApp"));
 
