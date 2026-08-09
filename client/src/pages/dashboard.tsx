@@ -12,6 +12,7 @@ import { VulnerabilityMeter } from "@/components/dashboard/VulnerabilityMeter";
 import { ArchetypeHandicap } from "@/components/dashboard/ArchetypeHandicap";
 import { LhcsSignal } from "@/components/dashboard/LhcsSignal";
 import { FlywheelCard } from "@/components/dashboard/FlywheelCard";
+import { ContextCraftBookBanner } from "@/components/dashboard/ContextCraftBookBanner";
 
 function DashboardLoading() {
   return (
@@ -43,6 +44,10 @@ function DashboardEmpty() {
       >
         <UploadIcon className="h-4 w-4" /> Upload your CV
       </Link>
+
+      <div className="mt-8 w-full max-w-md">
+        <ContextCraftBookBanner />
+      </div>
     </div>
   );
 }
@@ -64,6 +69,8 @@ export default function Dashboard() {
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <DashboardHeader name={user?.name ?? "—"} role={user?.role ?? "—"} />
+
+      <ContextCraftBookBanner />
 
       {identityCard && <ArkIdentityCard identity={identityCard} />}
 
