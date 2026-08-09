@@ -6,7 +6,6 @@ import { f1000Service } from "@/services/f1000.service";
 import { aiService } from "@/services/ai.service";
 import { featureFlagsService } from "@/services/feature-flags.service";
 import { StatCard } from "@/components/admin/StatCard";
-import { ErrorAlert } from "@/components/admin/ErrorAlert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -36,9 +35,8 @@ export default function AdminDashboard() {
     queryFn: async () => (await aiService.getStatus()).data,
   });
 
-  const isLoading = users.isLoading || subscriptions.isLoading || f1000.isLoading || flags.isLoading || ai.isLoading;
-  const error = users.error || subscriptions.error || f1000.error || flags.error || ai.error;
   const enabledCount = flags.data ? Object.values(flags.data).filter(Boolean).length : 0;
+  const totalFlags = flags.data ? Object.keys(flags.data).length : 0;
 
   return (
     <div className="space-y-6">
@@ -49,33 +47,40 @@ export default function AdminDashboard() {
         </p>
       </header>
 
-      <ErrorAlert title="Dashboard data failed to load" message={error ? String(error) : undefined} />
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Total users"
           value={users.data?.total.toLocaleString()}
           icon={Users}
-          isLoading={isLoading}
+          isLoading={users.isLoading}
+          subtext={users.error ? "Unavailable" : undefined}
         />
         <StatCard
           label="Active subscriptions"
           value={subscriptions.data?.total.toLocaleString()}
           icon={Repeat}
-          isLoading={isLoading}
+          isLoading={subscriptions.isLoading}
+          subtext={subscriptions.error ? "Unavailable" : undefined}
         />
         <StatCard
           label="F1000 remaining"
-          value={f1000.data?.remaining.toLocaleString()}
-          subtext={`${f1000.data?.claimed ?? 0} of ${f1000.data?.total ?? 0} claimed`}
+          value={f1000.data ? f1000.data.remaining.toLocaleString() : "—"}
+          subtext={
+            f1000.data
+              ? `${f1000.data.claimed ?? 0} of ${f1000.data.total ?? 0} claimed`
+              : f1000.error
+                ? "Unavailable"
+                : undefined
+          }
           icon={Gift}
-          isLoading={isLoading}
+          isLoading={f1000.isLoading}
         />
         <StatCard
           label="Feature flags on"
-          value={`${enabledCount} / ${flags.data ? Object.keys(flags.data).length : 0}`}
+          value={flags.data ? `${enabledCount} / ${totalFlags}` : "—"}
+          subtext={flags.error ? "Unavailable" : undefined}
           icon={Flag}
-          isLoading={isLoading}
+          isLoading={flags.isLoading}
         />
       </div>
 
@@ -90,7 +95,7 @@ export default function AdminDashboard() {
           {ai.isLoading ? (
             <Skeleton className="h-8 w-48" />
           ) : ai.error ? (
-            <p className="text-sm text-destructive font-mono">Could not load AI status.</p>
+            <p className="text-sm text-muted-foreground font-mono">AI budget unavailable.</p>
           ) : ai.data ? (
             <div className="space-y-4">
               <div className="flex flex-wrap gap-8">
