@@ -23,7 +23,11 @@ export default function LoginPage() {
   const [error, setError] = useState<string>("");
 
   const redirectTo =
-    (location.state as LocationState | null)?.from?.pathname ?? "/dashboard";
+    (location.state as LocationState | null)?.from?.pathname ??
+    (typeof window !== "undefined" &&
+    window.location.hostname.split(".")[0] === "command-center"
+      ? "/"
+      : "/dashboard");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
