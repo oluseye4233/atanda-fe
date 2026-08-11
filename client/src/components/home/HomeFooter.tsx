@@ -27,6 +27,14 @@ export function HomeFooter() {
           >
             Terms
           </Link>
+          <a
+            href={`${window.location.protocol}//command-center.${window.location.host}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-muted-foreground transition-colors duration-150"
+          >
+            Command Center
+          </a>
           {/* Out of MVP scope — investor demo route removed from the bundle.
           {FEATURES.investorDemo && (
             <Link
