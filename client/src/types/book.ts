@@ -1,62 +1,38 @@
-// ── Book Companion — shared types ─────────────────────────────────────────────
+// ── Books — public book library ──────────────────────────────────────────────
+// Matches the documented `/v1/books` contract.
 
-import type { JourneyNode } from "@shared/bookCompanion";
-
-/** A journey node enriched with the reader's earned state. */
-export interface JourneyNodeView {
+export interface Book {
   id: string;
-  order: number;
-  stage: string;
-  chapterLabel: string;
   title: string;
-  pillar: string | null;
-  badge: string;
-  ccLevel: string | null;
-  tierArt: string;
-  slug: string;
-  deepLink: string;
-  quest: string[];
-  earned: boolean;
-  earnedAt: string | null;
-  earnedVia: string | null;
+  url: string;
+  description: string | null;
+  bookBannerUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-/** Immutable ledger snapshot (baseline / final). */
-export interface LedgerSnap {
-  jstIndex: number;
-  ccmi: number;
-  arkScore: number;
-  badgesEarned: number;
-  spcPublished: number;
+/** GET /v1/books — paginated, newest first */
+export interface BookListResponse {
+  page: number;
+  pageSize: number;
+  total: number;
+  data: Book[];
 }
 
-/** The reader's current ledger with baseline/final for delta display. */
-export interface LedgerView {
-  baseline: LedgerSnap | null;
-  final: LedgerSnap | null;
-  current: {
-    jstIndex: number;
-    ccmi: number;
-    arkScore: number;
-    badgesEarned: number;
-    spcPublished: number;
-  };
-  delta: { jstIndex: number; ccmi: number; arkScore: number } | null;
+/** Query params for GET /v1/books */
+export interface ListBooksParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
 }
 
-/** GET /v1/book/journey */
-export interface BookJourney {
-  nodes: JourneyNodeView[];
-  earnedCount: number;
+/** POST /v1/books */
+export interface CreateBookBody {
+  title: string;
+  url: string;
+  description?: string | null;
+  bookBannerUrl?: string | null;
 }
 
-/** POST /v1/book/ledger/capture */
-export interface CaptureSnapshotBody {
-  kind: "baseline" | "final";
-}
-
-export interface CaptureSnapshotResponse {
-  ledger: LedgerView;
-}
-
-export type { JourneyNode };
+/** PATCH /v1/books/:id — any subset of fields */
+export type UpdateBookBody = Partial<CreateBookBody>;
