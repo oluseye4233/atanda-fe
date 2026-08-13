@@ -29,6 +29,10 @@ ARK is a **career-intelligence and AI-agent-certification platform**. The backen
 ### Base path & versioning
 Most endpoints live under `/v1`. A few operational routes live at the root (`/healthz`, `/doc`, `/docs`, `/v1/feature-flags`) and the multi-provider file analyzer at `/api/analyze`.
 
+### App-key header (every request)
+- **Every request** must include an `appkey` header matching the server's `APPKEY` env var. Missing → `401`, wrong → `403`.
+- Exempt (no `appkey` needed): `GET /healthz`, `GET /docs`, `GET /doc`, `POST /v1/webhook/stripe`.
+
 ### Authentication
 - Auth is **session-based**. On successful `login` (and after account verification), the server sets an **httpOnly session cookie**. Browser clients should send requests with credentials included (CORS is configured with `credentials: true`).
 - Non-browser clients may instead send the session id as a **Bearer token**: `Authorization: Bearer <sessionId>`.
@@ -36,19 +40,20 @@ Most endpoints live under `/v1`. A few operational routes live at the root (`/he
 - Two short-lived flow cookies exist: `vsid` (account-verification session) and `rsid` (password-reset session). These are set/read automatically; the OTP flows read the session id from the cookie, not the request body.
 
 **Public (no session required) endpoints:**
-`POST /v1/auth/signup`, `POST /v1/auth/verify-account`, `POST /v1/auth/resend-code`, `POST /v1/auth/login`, `POST /v1/auth/request-reset`, `POST /v1/auth/verify-request-reset`, `POST /v1/auth/reset-password`, `GET /healthz`, `GET /doc`, `GET /docs`.
+`POST /v1/auth/signup`, `POST /v1/auth/verify-account`, `POST /v1/auth/resend-code`, `POST /v1/auth/login`, `POST /v1/auth/request-reset`, `POST /v1/auth/verify-request-reset`, `POST /v1/auth/reset-password`, `GET /v1/books`, `GET /v1/books/{id}`, `GET /v1/plans/public`, `GET /v1/f1000/stats`, `GET /healthz`, `GET /doc`, `GET /docs`.
 
 All other endpoints require a valid session (`401 Unauthenticated` otherwise).
 
 ### Authorization layers (in the order they run)
-1. **Feature flags** — a route group whose flag is OFF returns a clean **`404`** (as if it doesn't exist). Flags are env-controlled (`FEATURE_<NAME>=true|false`).
-2. **Rate limiting** (Redis-backed, fail-open) — over the limit returns **`429`** with `Retry-After` and `X-RateLimit-*` headers.
+1. **App-key gate** (`appMiddlewareKey`) — validates the `appkey` header. Missing → `401`, wrong → `403`. Exempts `/healthz`, `/docs`, `/doc`, and the Stripe webhook.
+2. **Feature flags** — a route group whose flag is OFF returns a clean **`404`** (as if it doesn't exist). Flags are env-controlled (`FEATURE_<NAME>=true|false`).
+3. **Rate limiting** (Redis-backed, fail-open) — over the limit returns **`429`** with `Retry-After` and `X-RateLimit-*` headers.
    - Global: **120 requests / 60s** per client.
    - `POST /v1/auth/*`: **20 / 60s**.
    - `POST /v1/f1000/claim`: **10 / 60s**.
-3. **Session auth** — `401` if missing/invalid.
-4. **Role gate** (`requireRole`) — admin/staff-only routes return **`403`** otherwise.
-5. **Plan-module gate** (`requireModuleAccess`) — returns **`403`** unless the user's active subscription plan enables the required module. **`admin`/`staff` bypass this gate.**
+4. **Session auth** — `401` if missing/invalid.
+5. **Role gate** (`requireRole`) — admin/staff-only routes return **`403`** otherwise.
+6. **Plan-module gate** (`requireModuleAccess`) — returns **`403`** unless the user's active subscription plan enables the required module. **`admin`/`staff` bypass this gate.**
 
 ### Content type
 Request and response bodies are JSON (`application/json`), except two multipart file uploads: `POST /v1/resume/upload` and `POST /api/analyze` (`multipart/form-data`).
@@ -201,6 +206,11 @@ List users (paginated).
 
 ### DELETE `/v1/plans/{id}` — admin/staff
 - **200:** `{ message: string }`. **403** / **404**.
+
+### POST `/v1/plans/{id}/sync-stripe` — admin/staff
+Force-sync a plan's Stripe product and monthly/yearly recurring prices. Use when a plan shows `stripeMonthlyId: null` or `stripeYearlyId: null` (the automatic background sync hasn't finished or failed).
+- **Params:** `id` (uuid).
+- **200:** the updated plan object with Stripe IDs populated. **403** / **404** / **502** (Stripe API error).
 
 **Plan object:**
 ```json
@@ -374,7 +384,10 @@ List a user's assessments (self or admin/staff).
   "riskModifiers": [ { "task": "string", "automatable": 0 } ],
   "matchedCardIds": ["string"],
   "archetypeArchitect": 0, "archetypeOrchestrator": 0, "archetypeConductor": 0,
-  "contextCraftLevel": "string", "resumeUrl": "string | null", "createdAt": "date"
+  "contextCraftLevel": "string", "resumeUrl": "string | null", "createdAt": "date",
+  "transferabilityVectors": [ { "id": "uuid", "assessmentId": "uuid", "subject": "string", "score": 0 } ],
+  "pivotOpportunities": [ { "id": "uuid", "assessmentId": "uuid", "role": "string", "feasibility": 0, "gapCost": "string", "time": "string" } ],
+  "upskillingPlans": [ { "id": "uuid", "assessmentId": "uuid", "phase": "string", "type": "string", "title": "string", "description": "string", "hours": 0 } ]
 }
 ```
 
@@ -660,7 +673,42 @@ Claim a founding-member code.
 
 ---
 
-## 18. Operational endpoints
+## 18. Books — `/v1/books`
+
+Public book library. `GET` is open to everyone (no auth, no `appkey`). `POST` / `PATCH` / `DELETE` are admin/staff only.
+
+### GET `/v1/books` — public
+List books, newest first.
+- **Query:** `page?`, `pageSize?`, `search?` (matches title).
+- **200:** `{ page, pageSize, total, data: [ Book object ] }`.
+
+### GET `/v1/books/{id}` — public
+- **Params:** `id` (uuid).
+- **200:** a Book object. **404:** not found.
+
+### POST `/v1/books` — admin/staff
+- **Body:** `{ title: string(1..255), url: string, description?: string|null, bookBannerUrl?: string|null }`
+- **201:** the created Book object. **403** / **422**.
+
+### PATCH `/v1/books/{id}` — admin/staff
+- **Body:** any subset of `{ title?, url?, description?, bookBannerUrl? }`.
+- **200:** the updated Book object. **403** / **404** / **422**.
+
+### DELETE `/v1/books/{id}` — admin/staff
+- **200:** `{ message: string }`. **403** / **404**.
+
+**Book object:**
+```json
+{
+  "id": "uuid", "title": "string", "url": "string",
+  "description": "string | null", "bookBannerUrl": "string | null",
+  "createdAt": "date", "updatedAt": "date"
+}
+```
+
+---
+
+## 19. Operational endpoints
 
 ### GET `/healthz` — public
 Liveness probe.
@@ -678,7 +726,7 @@ Swagger UI, backed by `/doc`.
 
 ---
 
-## 19. Feature flags reference
+## 20. Feature flags reference
 
 Every gated route group checks a flag; when OFF the route returns a clean `404`. Flags are set via env vars `FEATURE_<UPPER_SNAKE>=true|false`.
 
@@ -690,7 +738,7 @@ Every gated route group checks a flag; when OFF the route returns a clean `404`.
 
 ---
 
-## 20. Plan-module gating summary
+## 21. Plan-module gating summary
 
 `requireModuleAccess` maps route groups to `PlanRule` booleans. A non-admin/staff user needs an **active** subscription whose plan enables the module, or the route returns `403`. `admin` and `staff` bypass this check entirely.
 
@@ -703,3 +751,7 @@ Every gated route group checks a flag; when OFF the route returns a clean `404`.
 | `/v1/sphinx/*` | `contextCraft` |
 
 Résumé analysis/upload, AI routes, and F1000 are **not** gated by `requireModuleAccess` (AI uses its own tier policy; résumé upload is limited via resume-counts; F1000 is open to any signed-in user under the feature flag).
+
+### Admin/staff AI-tier override
+
+In addition to bypassing `requireModuleAccess`, `admin` and `staff` roles are always resolved to the `ENTERPRISE` AI tier regardless of their plan (or lack thereof). This grants full AI model access, all daily quotas, and the enterprise token/cost budget.

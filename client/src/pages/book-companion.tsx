@@ -1,22 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  BookOpen,
-  Lock,
-  CheckCircle2,
-  ArrowUpRight,
-  Trophy,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Loader2,
-  Sparkles,
-} from "lucide-react";
+import { BookOpen, Sparkles, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
-import { api } from "@/lib/api";
+import { bookService } from "@/services/book.service";
+import { getApiErrorMessage } from "@/lib/apiError";
 import { FEATURES } from "@shared/featureFlags";
-import { F1000QrCard } from "@/components/f1000/F1000QrCard";
 import {
   JOURNEY_NODES,
   JOURNEY_STAGES,
@@ -24,52 +13,10 @@ import {
   BOOK_TOTAL_NODES,
   type JourneyStageId,
 } from "@shared/bookCompanion";
-
-type JourneyNodeView = {
-  id: string;
-  order: number;
-  stage: string;
-  chapterLabel: string;
-  title: string;
-  pillar: string | null;
-  badge: string;
-  ccLevel: string | null;
-  tierArt: string;
-  slug: string;
-  deepLink: string;
-  quest: string[];
-  earned: boolean;
-  earnedAt: string | null;
-  earnedVia: string | null;
-};
-
-type LedgerSnap = {
-  jstIndex: number;
-  ccmi: number;
-  arkScore: number;
-  badgesEarned: number;
-  spcPublished: number;
-} | null;
-
-type LedgerView = {
-  baseline: LedgerSnap;
-  final: LedgerSnap;
-  current: {
-    jstIndex: number;
-    ccmi: number;
-    arkScore: number;
-    badgesEarned: number;
-    spcPublished: number;
-  };
-  delta: { jstIndex: number; ccmi: number; arkScore: number } | null;
-};
-
-const TIER_RING: Record<string, string> = {
-  Bronze: "border-amber-600/60 shadow-[0_0_24px_rgba(201,123,58,0.35)]",
-  Silver: "border-slate-300/50 shadow-[0_0_24px_rgba(184,198,214,0.3)]",
-  Gold: "border-yellow-400/60 shadow-[0_0_28px_rgba(246,196,83,0.4)]",
-  Platinum: "border-cyan-300/70 shadow-[0_0_32px_rgba(157,239,255,0.45)]",
-};
+import { ChapterCard } from "@/components/book/ChapterCard";
+import { LedgerPanel } from "@/components/book/LedgerPanel";
+import { F1000BookBanner } from "@/components/book/F1000BookBanner";
+import type { JourneyNodeView, LedgerView } from "@/types/book";
 
 // Static node list (used logged-out). Mirrors the canonical shared model so the
 // page renders the full journey before any per-user status is fetched.
@@ -91,103 +38,6 @@ const STATIC_NODES: JourneyNodeView[] = JOURNEY_NODES.map((n) => ({
   earnedVia: null,
 }));
 
-function DeltaPill({ value }: { value: number }) {
-  const up = value > 0;
-  const down = value < 0;
-  const Icon = up ? TrendingUp : down ? TrendingDown : Minus;
-  const color = up ? "text-secondary" : down ? "text-destructive" : "text-muted-foreground";
-  const sign = up ? "+" : "";
-  return (
-    <span className={`inline-flex items-center gap-1 font-mono text-sm ${color}`}>
-      <Icon className="w-3.5 h-3.5" />
-      {sign}
-      {value}
-    </span>
-  );
-}
-
-function ChapterCard({ node, highlight }: { node: JourneyNodeView; highlight: boolean }) {
-  const badgeUrl = `/badge/book/${node.id}.png`;
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`glass-card rounded-xl border p-5 flex flex-col gap-4 ${
-        node.earned ? TIER_RING[node.tierArt] ?? "border-primary/40" : "border-white/10"
-      } ${highlight ? "ring-2 ring-primary/70" : ""}`}
-      data-testid={`card-chapter-${node.id}`}
-    >
-      <div className="flex items-start gap-4">
-        <div className="relative shrink-0">
-          <img
-            src={badgeUrl}
-            alt={`${node.badge} badge`}
-            loading="lazy"
-            className={`w-20 h-20 rounded-lg object-cover border ${
-              node.earned ? "border-white/20" : "border-white/10 grayscale opacity-40"
-            }`}
-            data-testid={`img-badge-${node.id}`}
-          />
-          <div className="absolute -bottom-2 -right-2">
-            {node.earned ? (
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-secondary text-black">
-                <CheckCircle2 className="w-4 h-4" />
-              </span>
-            ) : (
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-black/70 border border-white/20 text-muted-foreground">
-                <Lock className="w-3.5 h-3.5" />
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">
-              {node.chapterLabel}
-            </span>
-            {node.ccLevel && (
-              <span className="text-[10px] font-mono uppercase tracking-widest text-primary/80">
-                {node.ccLevel.replace("_", "-")}
-              </span>
-            )}
-            {node.pillar && (
-              <span className="text-[10px] font-mono uppercase tracking-widest text-secondary/80">
-                {node.pillar}
-              </span>
-            )}
-          </div>
-          <h4 className="font-display font-bold text-white text-lg leading-tight mt-1" data-testid={`text-title-${node.id}`}>
-            {node.title}
-          </h4>
-          <p className="text-primary font-mono text-xs mt-1">{node.badge}</p>
-        </div>
-      </div>
-
-      <ul className="space-y-1.5">
-        {node.quest.map((q, i) => (
-          <li key={i} className="flex gap-2 text-sm text-muted-foreground">
-            <span className="text-primary/60 font-mono">{i + 1}.</span>
-            <span>{q}</span>
-          </li>
-        ))}
-      </ul>
-
-      <div className="mt-auto flex items-center justify-between">
-        <span className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
-          {node.earned ? `Earned via ${node.earnedVia ?? "flywheel"}` : `Tier: ${node.tierArt}`}
-        </span>
-        <Link
-          to={`${node.deepLink}${node.deepLink.includes("?") ? "&" : "?"}book=${node.id}`}
-          className="inline-flex items-center gap-1.5 border border-primary/50 text-primary hover:bg-primary/10 font-mono text-xs uppercase tracking-widest h-9 px-3 rounded-md"
-          data-testid={`link-quest-${node.id}`}
-        >
-          {node.earned ? "Revisit" : "Start"} <ArrowUpRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-    </motion.div>
-  );
-}
-
 export default function BookCompanionPage() {
   const { user, isAuthenticated } = useAuth();
   const [nodes, setNodes] = useState<JourneyNodeView[]>(STATIC_NODES);
@@ -207,12 +57,15 @@ export default function BookCompanionPage() {
     setLoading(true);
     setError(null);
     try {
-      const [j, l] = await Promise.all([api.getBookJourney(), api.getBookLedger()]);
+      const [j, l] = await Promise.all([
+        bookService.getJourney().then((r) => r.data),
+        bookService.getLedger().then((r) => r.data),
+      ]);
       setNodes(j.nodes);
       setEarnedCount(j.earnedCount);
       setLedger(l);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -227,11 +80,11 @@ export default function BookCompanionPage() {
     setCapturing(true);
     setError(null);
     try {
-      const { ledger: l } = await api.captureBookSnapshot("final");
+      const { ledger: l } = (await bookService.captureSnapshot({ kind: "final" })).data;
       setLedger(l);
       await loadJourney();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(getApiErrorMessage(err));
     } finally {
       setCapturing(false);
     }
@@ -282,40 +135,7 @@ export default function BookCompanionPage() {
         </div>
       )}
 
-      {/* F1000 soft-launch — the printed QR that ships in the book points here */}
-      {FEATURES.f1000Promo && (
-        <div
-          className="glass-card border border-primary/40 rounded-xl p-6 flex flex-col md:flex-row md:items-center gap-6"
-          data-testid="banner-f1000-book"
-        >
-          <div className="shrink-0 mx-auto md:mx-0">
-            <F1000QrCard
-              url={typeof window !== "undefined" ? `${window.location.origin}/f1000` : "/f1000"}
-              size={150}
-              caption="Scan to claim your free seat"
-            />
-          </div>
-          <div className="flex-1 space-y-2 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 text-secondary font-mono text-xs uppercase tracking-widest">
-              <Sparkles className="w-3.5 h-3.5" /> First 1000 readers — free forever
-            </div>
-            <p className="text-white font-display font-bold text-lg">
-              F1000 free with this QR code
-            </p>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              The first 1,000 readers get an Individual Explorer account — free, forever — with Training Providers
-              unlocked. Scan the code (or open the link), sign in, and your single-use seat is reserved instantly.
-            </p>
-            <Link
-              to="/f1000"
-              data-testid="link-book-f1000"
-              className="inline-flex items-center gap-1.5 text-primary font-mono text-xs uppercase tracking-wider hover:text-primary/80 transition-colors"
-            >
-              Claim your F1000 seat <ArrowUpRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
-      )}
+      {FEATURES.f1000Promo && <F1000BookBanner />}
 
       {/* Logged-out banner */}
       {!isAuthenticated && (
@@ -359,46 +179,7 @@ export default function BookCompanionPage() {
 
       {/* Digital Ledger */}
       {isAuthenticated && ledger && (
-        <div className="glass-card border border-primary/40 rounded-xl p-6" data-testid="panel-ledger">
-          <div className="flex items-center gap-2 mb-4">
-            <Trophy className="w-5 h-5 text-primary" />
-            <h3 className="font-display font-bold text-lg text-white uppercase tracking-widest">Digital Ledger</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {([
-              { key: "jstIndex", label: "JST Index" },
-              { key: "ccmi", label: "CCMI" },
-              { key: "arkScore", label: "ARK Score" },
-            ] as const).map((row) => (
-              <div key={row.key} className="border border-white/10 rounded-lg p-4" data-testid={`ledger-${row.key}`}>
-                <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">{row.label}</div>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="font-display text-2xl font-black text-primary">{ledger.current[row.key]}</span>
-                  {ledger.delta && <DeltaPill value={ledger.delta[row.key]} />}
-                </div>
-                <div className="text-[11px] font-mono text-muted-foreground mt-2">
-                  Baseline: {ledger.baseline ? ledger.baseline[row.key] : "—"} · Final: {ledger.final ? ledger.final[row.key] : "—"}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-5">
-            <p className="text-sm text-muted-foreground">
-              {ledger.baseline
-                ? "Your baseline was captured at your first assessment. Close the loop by capturing your final snapshot."
-                : "Run your résumé assessment first to capture an immutable baseline."}
-            </p>
-            <button
-              onClick={captureFinal}
-              disabled={capturing || !ledger.baseline}
-              className="inline-flex items-center justify-center gap-2 border border-secondary/50 text-secondary hover:bg-secondary/10 disabled:opacity-40 disabled:cursor-not-allowed font-mono text-xs uppercase tracking-widest h-10 px-4 rounded-md"
-              data-testid="button-capture-final"
-            >
-              {capturing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-              Capture Final Snapshot
-            </button>
-          </div>
-        </div>
+        <LedgerPanel ledger={ledger} capturing={capturing} onCaptureFinal={captureFinal} />
       )}
 
       {loading && (

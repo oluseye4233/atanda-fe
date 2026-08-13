@@ -7,15 +7,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, FileUp, Loader2, Sparkles, AlertTriangle, CheckCircle2, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { useSubscription } from "@/lib/useSubscription";
-import { api } from "@/lib/api";
-import { ALL_CARD_PILLARS, type HivePrecheck } from "@shared/schema";
-
-interface ForgeRunResult {
-  body: string;
-  bodyLength: number;
-  fileName: string;
-  precheck: HivePrecheck;
-}
+import { sphinxService } from "@/services/sphinx.service";
+import { getApiErrorMessage } from "@/lib/apiError";
+import { ALL_CARD_PILLARS } from "@/lib/sphinx";
+import type { ForgeRunResult } from "@/types/sphinx";
 
 type LogLevel = "info" | "ok" | "warn" | "err";
 interface LogLine { id: number; level: LogLevel; text: string; t: number; }
@@ -63,7 +58,7 @@ export function ForgeLabPage() {
     await new Promise((r) => setTimeout(r, 200));
     push("info", "> calling /api/sphinx/forge-lab/run…");
     try {
-      const out: ForgeRunResult = await api.runForgeLab(file, meta);
+      const out: ForgeRunResult = (await sphinxService.runForgeLab(file, meta)).data;
       push("ok", `> parsed ${out.bodyLength.toLocaleString()} characters from ${out.fileName}.`);
       push("info", `> running deterministic HIVE pre-check…`);
       const hv = out.precheck.hiveScore;

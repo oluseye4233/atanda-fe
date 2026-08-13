@@ -14,6 +14,10 @@ import {
   Shield,
   FileText,
   LogOut,
+  BookOpen,
+  ShoppingBag,
+  Building2,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OnboardingTour } from "@/components/OnboardingTour";
@@ -71,8 +75,7 @@ const ALL_NAV_GROUPS: FlaggedNavGroup[] = [
       { name: "Intelligence Hub", href: "/dashboard", icon: BarChart3, hint: "Your scores & insights", flag: null },
       { name: "Upload CV", href: "/upload", icon: Upload, hint: "Run a new assessment", flag: null },
       { name: "ARK Resume", href: "/ark-resume", icon: FileText, hint: "ATS-optimized verified resume", flag: null },
-      // ── Out of MVP scope ──
-      // { name: "Book Companion", href: "/book", icon: BookOpen, hint: "Context Craft reading journey", flag: "bookCompanion" },
+      { name: "Book Companion", href: "/book", icon: BookOpen, hint: "Context Craft reading journey", flag: "bookCompanion" },
     ],
   },
   {
@@ -80,13 +83,12 @@ const ALL_NAV_GROUPS: FlaggedNavGroup[] = [
     items: [
       { name: "Skill Games", href: "/play", icon: Gamepad2, hint: "CCGE Arena — earn points", flag: null },
       { name: "Career Mobility", href: "/pathways", icon: Map, hint: "Pivot opportunities", flag: null },
-      // ── Out of MVP scope (SPHINX marketplace + training) ──
-      // { name: "Marketplace", href: "/marketplace", icon: ShoppingBag, hint: "SPHINX listings", flag: null },
-      // { name: "Corporate Marketplace", href: "/marketplace/corporate", icon: Building2, hint: "Your institution's SPCs", flag: "corporateMarketplace" },
-      // { name: "Roundtable", href: "/marketplace/roundtable", icon: Activity, hint: "Top-12 SPC leaderboard", flag: "sphinxAdvanced" },
-      // { name: "Synergy Lab", href: "/marketplace/synergy", icon: HelpCircle, hint: "Test card combinations", flag: "sphinxAdvanced" },
-      // { name: "Forge Lab", href: "/marketplace/forge-lab", icon: Upload, hint: "Upload .docx → HIVE pre-check", flag: "forgeLabDocx" },
-      // { name: "Training Providers", href: "/training", icon: GraduationCap, hint: "JST-matched certifications", flag: "trainingProviders" },
+      { name: "Marketplace", href: "/marketplace", icon: ShoppingBag, hint: "SPHINX listings", flag: null },
+      { name: "Corporate Marketplace", href: "/marketplace/corporate", icon: Building2, hint: "Your institution's SPCs", flag: "corporateMarketplace" },
+      { name: "Roundtable", href: "/marketplace/roundtable", icon: Activity, hint: "Top-12 SPC leaderboard", flag: "sphinxAdvanced" },
+      { name: "Synergy Lab", href: "/marketplace/synergy", icon: HelpCircle, hint: "Test card combinations", flag: "sphinxAdvanced" },
+      { name: "Forge Lab", href: "/marketplace/forge-lab", icon: Upload, hint: "Upload .docx → HIVE pre-check", flag: "forgeLabDocx" },
+      { name: "F1000", href: "/f1000", icon: Sparkles, hint: "Founding-member promo", flag: "f1000Promo" },
     ],
   },
   // ── Out of MVP scope (Talent Exchange) ──
