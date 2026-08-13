@@ -3,8 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   ShieldAlert,
-  Building2,
-  Globe,
   Sparkles,
   Loader2,
   Plus,
@@ -14,7 +12,6 @@ import {
 import { useAuth } from "@/lib/useAuth";
 import { sphinxService } from "@/services/sphinx.service";
 import { getApiErrorMessage } from "@/lib/apiError";
-import { FEATURES } from "@shared/featureFlags";
 import {
   ALL_CARD_PILLARS,
   CONTEXT_CRAFT_LEVELS,
@@ -28,7 +25,7 @@ import {
   suggestedPriceForHive,
   type ContextCraftLevel,
 } from "@/lib/sphinx";
-import type { HivePrecheck, SpcScope } from "@/types/sphinx";
+import type { HiveAnalysis, SpcScope } from "@/types/sphinx";
 import { PricingMatrixBanner } from "./PricingMatrixBanner";
 import { TierBadge, GradeChip } from "./badges";
 
@@ -43,14 +40,7 @@ export function PublishPage() {
     priceCredits: 25,
     scope: "OPEN" as SpcScope,
   });
-  const userInstitution =
-    ((user as { institution?: string | null } | null)?.institution as
-      | string
-      | null
-      | undefined)?.trim() || "";
-  const canPublishCorporate =
-    FEATURES.corporateMarketplace && userInstitution.length > 0;
-  const [precheck, setPrecheck] = useState<HivePrecheck | null>(null);
+  const [precheck, setPrecheck] = useState<HiveAnalysis | null>(null);
   const [precheckBusy, setPrecheckBusy] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,7 +112,6 @@ export function PublishPage() {
     try {
       const result = await sphinxService.hivePrecheck({
         title: form.title,
-        description: form.description,
         body: form.body,
         pillar: form.pillar,
       });
@@ -143,10 +132,12 @@ export function PublishPage() {
         description: form.description,
         body: form.body,
         pillar: form.pillar,
-        priceCredits: form.priceCredits,
+        price: form.priceCredits,
+        hiveScore: precheck?.hiveScore ?? 0,
+        kcseScore: 0,
         scope: form.scope,
       });
-      navigate(`/marketplace/${result.data.listing.id}`);
+      navigate(`/marketplace/${result.data.id}`);
     } catch (e: unknown) {
       setError(getApiErrorMessage(e, "Publish failed."));
     } finally {
@@ -181,84 +172,6 @@ export function PublishPage() {
       </div>
 
       <PricingMatrixBanner />
-
-      {FEATURES.corporateMarketplace && (
-        <div
-          className="glass-card p-5 rounded-xl border border-primary/20 space-y-3"
-          data-testid="panel-publish-scope"
-        >
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-primary" />
-            <h3 className="font-display font-bold text-sm text-primary tracking-wider uppercase">
-              Visibility
-            </h3>
-          </div>
-          <p className="font-mono text-[11px] text-muted-foreground">
-            {canPublishCorporate ? (
-              <>
-                Corporate scope restricts this SPC to members of{" "}
-                <span className="text-white">{userInstitution}</span>. Choose
-                Both to publish to both surfaces.
-              </>
-            ) : (
-              <>
-                Set an institution on your profile to unlock the corporate
-                marketplace. Defaulting to public SPHINX.
-              </>
-            )}
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {(
-              [
-                {
-                  id: "OPEN",
-                  label: "Public SPHINX",
-                  icon: Globe,
-                  desc: "Visible to everyone",
-                },
-                {
-                  id: "CORPORATE",
-                  label: "Corporate Only",
-                  icon: Building2,
-                  desc: "Same institution only",
-                },
-                {
-                  id: "BOTH",
-                  label: "Both",
-                  icon: Sparkles,
-                  desc: "Public + corporate",
-                },
-              ] as const
-            ).map((opt) => {
-              const Icon = opt.icon;
-              const disabled = opt.id !== "OPEN" && !canPublishCorporate;
-              const active = form.scope === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => setForm({ ...form, scope: opt.id })}
-                  data-testid={`button-scope-${opt.id.toLowerCase()}`}
-                  className={`p-3 rounded-lg border text-left transition-all font-mono ${
-                    active
-                      ? "bg-primary/15 border-primary/50 text-primary"
-                      : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
-                  } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <Icon className="h-3.5 w-3.5" />
-                    <span className="text-[11px] uppercase tracking-wider font-bold">
-                      {opt.label}
-                    </span>
-                  </div>
-                  <div className="text-[10px] opacity-80">{opt.desc}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       <div className="glass-card p-6 rounded-xl space-y-5">
         <div>
@@ -417,7 +330,7 @@ export function PublishPage() {
           </button>
           <button
             onClick={submit}
-            disabled={submitting || !precheck?.passes}
+            disabled={submitting || !precheck}
             data-testid="button-publish-confirm"
             className="px-5 py-3 rounded-lg font-mono text-xs uppercase tracking-wider bg-primary/10 text-primary border border-primary/30 hover:bg-primary/15 disabled:opacity-40 transition-all flex items-center gap-2"
           >
@@ -438,15 +351,11 @@ export function PublishPage() {
 
         {precheck && (
           <div
-            className={`p-4 rounded-lg border space-y-3 ${precheck.passes ? "border-secondary/30 bg-secondary/5" : "border-amber-400/30 bg-amber-400/5"}`}
+            className="p-4 rounded-lg border border-secondary/30 bg-secondary/5 space-y-3"
             data-testid="text-precheck-result"
           >
             <div className="flex items-center gap-3">
-              {precheck.passes ? (
-                <CheckCircle2 className="h-5 w-5 text-secondary" />
-              ) : (
-                <AlertTriangle className="h-5 w-5 text-amber-400" />
-              )}
+              <CheckCircle2 className="h-5 w-5 text-secondary" />
               <div className="flex-1">
                 <div className="font-mono text-sm text-white flex flex-wrap items-center gap-3">
                   HIVE:{" "}
@@ -454,24 +363,18 @@ export function PublishPage() {
                     {precheck.hiveScore}
                   </span>{" "}
                   / 100
-                  <span className="text-muted-foreground">
-                    KCSE:{" "}
-                    <span
-                      className="text-white"
-                      data-testid="text-precheck-kcse"
-                    >
-                      {precheck.kcseScore}
-                    </span>
+                  <span
+                    className="font-bold"
+                    style={{ color: precheck.letterGradeColor }}
+                    data-testid="text-precheck-grade"
+                  >
+                    {precheck.letterGrade}
                   </span>
                   <TierBadge hive={precheck.hiveScore} />
                   <GradeChip hive={precheck.hiveScore} />
                 </div>
-                <div
-                  className={`text-xs font-mono mt-1 ${precheck.passes ? "text-secondary" : "text-amber-400"}`}
-                >
-                  {precheck.passes
-                    ? "Pre-check passed — ready to publish."
-                    : "Pre-check failed — improve and re-run."}
+                <div className="text-xs font-mono mt-1 text-secondary">
+                  Pre-check complete — ready to publish.
                 </div>
                 {suggestion && (
                   <div
@@ -489,15 +392,19 @@ export function PublishPage() {
                 )}
               </div>
             </div>
-            <ul className="text-xs font-mono text-muted-foreground space-y-1">
-              {precheck.reasons.map((r, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="text-muted-foreground/50">•</span> {r}
-                </li>
-              ))}
-              {precheck.warnings.map((w, i) => (
-                <li key={`w-${i}`} className="flex gap-2 text-amber-400/80">
-                  <span>⚠</span> {w}
+            <ul
+              className="text-xs font-mono text-muted-foreground space-y-1"
+              data-testid="list-precheck-suggestions"
+            >
+              {precheck.pillarSuggestions.map((s) => (
+                <li key={s.pillar} className="flex gap-2">
+                  <span className="text-muted-foreground/50">•</span>
+                  <span>
+                    <span className="text-white font-bold uppercase">
+                      {s.pillar}
+                    </span>
+                    : {s.suggestion}
+                  </span>
                 </li>
               ))}
             </ul>

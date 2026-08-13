@@ -5,7 +5,7 @@ import { Sparkles, Lock, AlertTriangle, Loader2 } from "lucide-react";
 import { sphinxService } from "@/services/sphinx.service";
 import { getApiErrorMessage } from "@/lib/apiError";
 import { GradeChip } from "./badges";
-import type { SpcListing, SpcAiAnalysis } from "@/types/sphinx";
+import type { SpcListing, HiveAnalysis } from "@/types/sphinx";
 
 export function AiAnalysisPanel({
   listing,
@@ -14,7 +14,7 @@ export function AiAnalysisPanel({
   listing: SpcListing;
   isPro: boolean;
 }) {
-  const [analysis, setAnalysis] = useState<SpcAiAnalysis | null>(null);
+  const [analysis, setAnalysis] = useState<HiveAnalysis | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -156,15 +156,6 @@ export function AiAnalysisPanel({
                   <span className="font-mono text-xs text-white font-bold uppercase tracking-wider">
                     {s.pillar}
                   </span>
-                  <span className="font-mono text-[10px] text-muted-foreground">
-                    {s.currentStrength}/100
-                  </span>
-                </div>
-                <div className="h-1 rounded-full bg-white/5 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-primary/70"
-                    style={{ width: `${s.currentStrength}%` }}
-                  />
                 </div>
                 <p className="font-mono text-xs text-muted-foreground leading-relaxed">
                   {s.suggestion}

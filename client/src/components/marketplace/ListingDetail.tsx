@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft,
   Coins,
-  User,
   Loader2,
   AlertTriangle,
   CheckCircle2,
@@ -15,35 +14,16 @@ import {
 import { useAuth } from "@/lib/useAuth";
 import { sphinxService } from "@/services/sphinx.service";
 import { getApiErrorMessage } from "@/lib/apiError";
-import { FEATURES } from "@shared/featureFlags";
-import {
-  CONTEXT_CRAFT_LEVELS,
-  CC_PILLARS,
-  formatPriceUsd,
-  type ContextCraftLevel,
-} from "@/lib/sphinx";
+import { CC_PILLARS, formatPriceUsd } from "@/lib/sphinx";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SpcTaxonomyPanel } from "@/components/marketplace/SpcTaxonomyPanel";
 import { TierBadge, CategoryChip, PillarBadge, GradeChip } from "./badges";
 import { PerfBars } from "./PerfBars";
 import { AiAnalysisPanel } from "./AiAnalysisPanel";
-import { ComplementaryPairsTab } from "./ComplementaryPairsTab";
-import { SynthesisTab } from "./SynthesisTab";
-import { SpcFeedbackPanel } from "./SpcFeedbackPanel";
 import type { AuthUser } from "@/types/auth";
-import type {
-  SpcListing,
-  UserCredits,
-  PurchaseResult,
-} from "@/types/sphinx";
+import type { SpcListing, PurchaseResponse } from "@/types/sphinx";
 
-const DETAIL_TABS = [
-  "overview",
-  "pillars",
-  "tests",
-  "pairs",
-  "synthesis",
-] as const;
+const DETAIL_TABS = ["overview", "pillars", "tests"] as const;
 type DetailTab = (typeof DETAIL_TABS)[number];
 
 function TabStub({ id, label }: { id: string; label: string }) {
@@ -66,14 +46,10 @@ function TabStub({ id, label }: { id: string; label: string }) {
 export function ListingDetail({ id }: { id: string }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [data, setData] = useState<{
-    listing: SpcListing & { bodyLocked?: boolean; bodyLength?: number };
-    creator: { id: string; name: string; contextCraftCertLevel: string } | null;
-  } | null>(null);
+  const [listing, setListing] = useState<SpcListing | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState(false);
-  const [outcome, setOutcome] = useState<PurchaseResult | null>(null);
-  const [credits, setCredits] = useState<UserCredits | null>(null);
+  const [outcome, setOutcome] = useState<PurchaseResponse | null>(null);
   const [tab, setTab] = useState<DetailTab>("overview");
 
   // Hash-based deep links (e.g. /marketplace/abc#pillars).
@@ -103,26 +79,22 @@ export function ListingDetail({ id }: { id: string }) {
   useEffect(() => {
     let active = true;
     sphinxService
-      .getListing(id, user?.id)
+      .listListings()
       .then((r) => {
-        if (active) setData(r.data);
+        if (!active) return;
+        const found = r.data.data.find((l) => l.id === id);
+        if (found) setListing(found);
+        else setError("Listing not found.");
       })
       .catch((e: unknown) => {
         if (active) setError(getApiErrorMessage(e, "Failed to load."));
       });
-    if (user)
-      sphinxService
-        .getCredits(user.id)
-        .then((r) => {
-          if (active) setCredits(r.data);
-        })
-        .catch(() => null);
     return () => {
       active = false;
     };
-  }, [id, user]);
+  }, [id]);
 
-  const isOwnListing = user?.id === data?.listing.creatorId;
+  const isOwnListing = user?.id === listing?.creatorUserId;
   const userPlan = (user as AuthUser | null)?.subscriptionPlan as
     | string
     | undefined;
@@ -132,15 +104,12 @@ export function ListingDetail({ id }: { id: string }) {
     userPlan === "ENTERPRISE";
 
   const handlePurchase = async () => {
-    if (!user || !data) return;
+    if (!user || !listing) return;
     setPurchasing(true);
     setError(null);
     try {
-      const result = await sphinxService.purchaseListing(data.listing.id, user.id);
+      const result = await sphinxService.purchaseListing(listing.id);
       setOutcome(result.data);
-      setData((d) => (d ? { ...d, listing: result.data.listing } : d));
-      const refreshed = await sphinxService.getCredits(user.id);
-      setCredits(refreshed.data);
     } catch (e: unknown) {
       setError(getApiErrorMessage(e, "Purchase failed."));
     } finally {
@@ -148,7 +117,7 @@ export function ListingDetail({ id }: { id: string }) {
     }
   };
 
-  if (error && !data) {
+  if (error && !listing) {
     return (
       <div className="max-w-3xl mx-auto py-12">
         <Link
@@ -164,18 +133,13 @@ export function ListingDetail({ id }: { id: string }) {
     );
   }
 
-  if (!data) {
+  if (!listing) {
     return (
       <div className="flex items-center justify-center py-24">
         <Loader2 className="h-6 w-6 text-primary animate-spin" />
       </div>
     );
   }
-
-  const { listing, creator } = data;
-  const creatorCert =
-    (creator?.contextCraftCertLevel as ContextCraftLevel) || "NONE";
-  const certInfo = CONTEXT_CRAFT_LEVELS[creatorCert];
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -193,8 +157,8 @@ export function ListingDetail({ id }: { id: string }) {
           <div className="flex-1 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <TierBadge hive={listing.hiveScore} size="lg" />
-              <CategoryChip pillar={listing.pillar} />
-              <PillarBadge pillar={listing.pillar} />
+              <CategoryChip pillar={listing.pillar ?? ""} />
+              <PillarBadge pillar={listing.pillar ?? ""} />
               <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-white/5 text-muted-foreground border border-white/10">
                 {listing.status}
               </span>
@@ -220,44 +184,17 @@ export function ListingDetail({ id }: { id: string }) {
                 className="font-mono text-lg font-bold text-amber-400"
                 data-testid="text-listing-price"
               >
-                {formatPriceUsd(listing.priceCredits)}
+                {formatPriceUsd(listing.price)}
               </span>
             </div>
           </div>
         </div>
-
-        {creator && (
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <div className="flex-1">
-              <div className="text-[9px] uppercase font-mono tracking-widest text-muted-foreground">
-                Creator
-              </div>
-              <div
-                className="font-mono text-sm text-white"
-                data-testid="text-creator-name"
-              >
-                {creator.name}
-              </div>
-            </div>
-            <span
-              className="px-2 py-1 rounded text-[10px] font-mono uppercase"
-              style={{
-                color: certInfo.color,
-                backgroundColor: `${certInfo.color}15`,
-                border: `1px solid ${certInfo.color}30`,
-              }}
-            >
-              {certInfo.label}
-            </span>
-          </div>
-        )}
       </div>
 
-      {/* 5-tab layout */}
+      {/* 3-tab layout */}
       <Tabs value={tab} onValueChange={setTabAndHash} className="space-y-5">
         <TabsList
-          className="w-full grid grid-cols-2 md:grid-cols-5 h-auto bg-black/40 border border-white/10 rounded-lg p-1 gap-1"
+          className="w-full grid grid-cols-2 md:grid-cols-3 h-auto bg-black/40 border border-white/10 rounded-lg p-1 gap-1"
           data-testid="tabs-detail"
         >
           {DETAIL_TABS.map((t) => (
@@ -274,7 +211,7 @@ export function ListingDetail({ id }: { id: string }) {
 
         {/* Overview */}
         <TabsContent value="overview" className="space-y-5">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="glass-card p-4 rounded-lg border border-white/5">
               <div className="text-[9px] uppercase font-mono tracking-widest text-muted-foreground mb-1">
                 HIVE Score
@@ -297,45 +234,19 @@ export function ListingDetail({ id }: { id: string }) {
                 {Math.round(listing.kcseScore * 10) / 10}
               </div>
             </div>
-            <div className="glass-card p-4 rounded-lg border border-white/5">
-              <div className="text-[9px] uppercase font-mono tracking-widest text-muted-foreground mb-1">
-                Sales
-              </div>
-              <div
-                className="font-mono text-2xl font-bold text-white"
-                data-testid="text-sales-count"
-              >
-                {listing.salesCount}
-              </div>
-            </div>
           </div>
 
-          {listing.bodyLocked !== false ? (
-            <SpcTaxonomyPanel
-              data={{
-                pillar: listing.pillar,
-                hiveScore: listing.hiveScore,
-                kcseScore: listing.kcseScore,
-                priceCredits: listing.priceCredits,
-                salesCount: listing.salesCount,
-                bodyLength: listing.bodyLength ?? 0,
-                creatorCertLevel: creator?.contextCraftCertLevel,
-              }}
-              locked
-            />
-          ) : (
-            <div>
-              <h3 className="text-[10px] uppercase font-mono tracking-widest text-muted-foreground mb-3">
-                Full Prompt — Unlocked
-              </h3>
-              <pre
-                className="glass-card p-4 rounded-lg border border-secondary/30 text-xs text-white/90 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto"
-                data-testid="text-listing-body"
-              >
-                {listing.body}
-              </pre>
-            </div>
-          )}
+          <SpcTaxonomyPanel
+            data={{
+              pillar: listing.pillar ?? "",
+              hiveScore: listing.hiveScore,
+              kcseScore: listing.kcseScore,
+              priceCredits: listing.price,
+              salesCount: 0,
+              bodyLength: listing.body?.length ?? 0,
+            }}
+            locked
+          />
 
           {error && (
             <div
@@ -357,18 +268,28 @@ export function ListingDetail({ id }: { id: string }) {
                 <CheckCircle2 className="h-4 w-4" /> Purchase complete — full
                 prompt unlocked.
               </div>
-              <div className="text-xs text-muted-foreground font-mono">
-                Balance:{" "}
-                <span className="text-white">
-                  {formatPriceUsd(outcome.buyerBalance)}
-                </span>{" "}
-                remaining.
-                {outcome.isFirstSaleForCreator && (
-                  <span className="text-secondary ml-2">
-                    <Sparkles className="h-3 w-3 inline mr-1" />
-                    First sale for {creator?.name} — JST Talent +
-                    {outcome.creatorTalentBoost}.
+              <div className="text-xs text-muted-foreground font-mono space-y-1">
+                <div>
+                  Price:{" "}
+                  <span className="text-white">
+                    {formatPriceUsd(outcome.price)}
                   </span>
+                </div>
+                <div>
+                  Creator share:{" "}
+                  <span className="text-white">
+                    {formatPriceUsd(outcome.creatorShare)}
+                  </span>{" "}
+                  · Platform share:{" "}
+                  <span className="text-white">
+                    {formatPriceUsd(outcome.platformShare)}
+                  </span>
+                </div>
+                {outcome.isFirstSaleForCreator && (
+                  <div className="text-secondary">
+                    <Sparkles className="h-3 w-3 inline mr-1" />
+                    First sale for this creator — JST Talent boost applied.
+                  </div>
                 )}
               </div>
             </motion.div>
@@ -386,10 +307,7 @@ export function ListingDetail({ id }: { id: string }) {
           {user && !isOwnListing && !outcome && (
             <button
               onClick={handlePurchase}
-              disabled={
-                purchasing ||
-                (credits ? credits.balance < listing.priceCredits : false)
-              }
+              disabled={purchasing}
               data-testid="button-purchase-spc"
               className="w-full px-6 py-4 rounded-lg font-mono text-sm uppercase tracking-wider transition-all bg-primary/10 text-primary border border-primary/30 hover:bg-primary/15 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
@@ -400,9 +318,7 @@ export function ListingDetail({ id }: { id: string }) {
               )}
               {purchasing
                 ? "Processing…"
-                : credits && credits.balance < listing.priceCredits
-                  ? `Need ${formatPriceUsd(listing.priceCredits - credits.balance)} more`
-                  : `Purchase for ${formatPriceUsd(listing.priceCredits)}`}
+                : `Purchase for ${formatPriceUsd(listing.price)}`}
             </button>
           )}
 
@@ -411,11 +327,7 @@ export function ListingDetail({ id }: { id: string }) {
               className="p-4 rounded-lg border border-amber-400/20 bg-amber-400/5 font-mono text-xs text-amber-400 text-center"
               data-testid="text-own-listing"
             >
-              This is your listing — you can't buy it. Total earned:{" "}
-              <span className="font-bold">
-                {formatPriceUsd(listing.totalEarned)}
-              </span>
-              .
+              This is your listing — you can't buy it.
             </div>
           )}
         </TabsContent>
@@ -474,18 +386,7 @@ export function ListingDetail({ id }: { id: string }) {
         <TabsContent value="tests">
           <TabStub id="tests" label="Tests" />
         </TabsContent>
-        <TabsContent value="pairs">
-          <ComplementaryPairsTab listingId={listing.id} />
-        </TabsContent>
-        <TabsContent value="synthesis">
-          <SynthesisTab listingId={listing.id} />
-        </TabsContent>
       </Tabs>
-      {FEATURES.corporateMarketplace && (
-        <div data-testid="panel-feedback-section">
-          <SpcFeedbackPanel listing={listing} viewer={user} />
-        </div>
-      )}
     </div>
   );
 }

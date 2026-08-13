@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Lock, CheckCircle2, ArrowUpRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Lock, CheckCircle2, ArrowUpRight, TrendingUp, TrendingDown, Minus, BookOpen } from "lucide-react";
 import type { JourneyNodeView } from "@/types/book";
 
 const TIER_RING: Record<string, string> = {
@@ -26,7 +26,6 @@ export function DeltaPill({ value }: { value: number }) {
 }
 
 export function ChapterCard({ node, highlight }: { node: JourneyNodeView; highlight: boolean }) {
-  const badgeUrl = `/badge/book/${node.id}.png`;
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -38,15 +37,16 @@ export function ChapterCard({ node, highlight }: { node: JourneyNodeView; highli
     >
       <div className="flex items-start gap-4">
         <div className="relative shrink-0">
-          <img
-            src={badgeUrl}
-            alt={`${node.badge} badge`}
-            loading="lazy"
-            className={`w-20 h-20 rounded-lg object-cover border ${
-              node.earned ? "border-white/20" : "border-white/10 grayscale opacity-40"
+          <div
+            className={`w-20 h-20 rounded-lg flex items-center justify-center border ${
+              node.earned
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-white/10 bg-black/40 text-muted-foreground/60"
             }`}
             data-testid={`img-badge-${node.id}`}
-          />
+          >
+            <BookOpen className="w-9 h-9" />
+          </div>
           <div className="absolute -bottom-2 -right-2">
             {node.earned ? (
               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-secondary text-black">

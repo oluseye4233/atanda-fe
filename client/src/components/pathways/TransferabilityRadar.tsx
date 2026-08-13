@@ -32,23 +32,23 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function TransferabilityRadar({ data }: TransferabilityRadarProps) {
   return (
-    <div className="glass-card p-6 rounded-xl w-full h-[500px] flex flex-col" data-testid="transferability-radar">
-      <div className="flex items-center justify-between mb-4">
+    <div className="glass-card p-6 rounded-xl w-full h-[500px] flex flex-col overflow-hidden" data-testid="transferability-radar">
+      <div className="flex items-center justify-between gap-3 mb-4">
         <h3 className="font-display font-bold text-lg text-primary uppercase tracking-widest">
           12-Vector Transferability
         </h3>
-        <span className="text-xs font-mono text-muted-foreground px-2 py-1 bg-white/5 rounded border border-white/10">
+        <span className="text-xs font-mono text-muted-foreground px-2 py-1 bg-white/5 rounded border border-white/10 shrink-0">
           Orthogonal Dimension Mapping
         </span>
       </div>
       
-      <div className="flex-1 relative w-full h-full min-h-0">
+      <div className="flex-1 relative w-full h-full min-h-0 px-1 sm:px-2">
         <ResponsiveContainer width="100%" height="100%">
-          <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
+          <RadarChart cx="50%" cy="50%" outerRadius="62%" data={data}>
             <PolarGrid stroke="hsla(var(--border) / 0.5)" />
             <PolarAngleAxis 
               dataKey="subject" 
-              tick={{ fill: 'hsla(var(--foreground) / 0.7)', fontSize: 10, fontFamily: 'Space Grotesk' }} 
+              tick={{ fill: 'hsla(var(--foreground) / 0.7)', fontSize: 9, fontFamily: 'Space Grotesk' }} 
             />
             <PolarRadiusAxis 
               angle={30} 

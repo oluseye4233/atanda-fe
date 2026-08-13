@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import NotFound from "@/pages/not-found";
-import { FEATURES } from "@shared/featureFlags";
 import { Link, useMatch } from "react-router-dom";
-import { ShoppingBag, Plus, Lock, Loader2, Search, Coins } from "lucide-react";
+import { ShoppingBag, Plus, Lock, Loader2, Search } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { sphinxService } from "@/services/sphinx.service";
 import { getApiErrorMessage } from "@/lib/apiError";
@@ -16,22 +15,12 @@ import {
   type ContextCraftLevel,
 } from "@/lib/sphinx";
 import type { SpcListing } from "@/types/sphinx";
-import { CreditsHeader } from "@/components/marketplace/CreditsHeader";
 import { MatrixListingCard } from "@/components/marketplace/MatrixListingCard";
 import { FilterChipRow } from "@/components/marketplace/FilterChipRow";
 import { ListingDetail } from "@/components/marketplace/ListingDetail";
 import { PublishPage } from "@/components/marketplace/PublishPage";
-import { CorporateMarketplacePage } from "@/components/marketplace/CorporateMarketplacePage";
-import { SynergyLabPage } from "@/components/marketplace/SynergyLabPage";
-import { RoundtablePage } from "@/components/marketplace/RoundtablePage";
-import { SynthesisPage } from "@/components/marketplace/SynthesisPage";
-import { ForgeLabPage } from "@/pages/marketplace-forge-lab";
-import { CommandCentrePage } from "@/pages/marketplace-bonsai";
 
 const CATEGORY_FILTER = ["All", ...MARKETPLACE_CATEGORIES] as const;
-// M3 — 6-dim taxonomy filters (matches `server/jnomicsSeed.ts`).
-// The full 6-D set: tier · disc · rarity · pillar · category · version.
-// Category lives in its own chip row above; the remaining 5 are below.
 const DISC_FILTER = [
   "All",
   "Discovery",
@@ -77,15 +66,7 @@ function ListingsList() {
     setListings(null);
     setError(null);
     sphinxService
-      .listListings({
-        category,
-        search: debouncedSearch,
-        disc,
-        rarity,
-        version,
-        tier,
-        pillar,
-      })
+      .listListings()
       .then((r) => {
         if (active) setListings(r.data.data);
       })
@@ -96,7 +77,7 @@ function ListingsList() {
     return () => {
       active = false;
     };
-  }, [category, debouncedSearch, disc, rarity, version, tier, pillar]);
+  }, []);
 
   const canPublish = useMemo(() => {
     const level = (user?.contextCraftCertLevel as ContextCraftLevel) || "NONE";
@@ -122,7 +103,6 @@ function ListingsList() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {user && <CreditsHeader user={{ id: user.id, name: user.name }} />}
           <Link to="/marketplace/publish">
             <button
               data-testid="button-publish-spc"
@@ -252,47 +232,10 @@ export default function MarketplacePage() {
   const matchDetail = useMatch("/marketplace/:id");
   const paramsDetail = matchDetail?.params as { id: string } | undefined;
   const matchPublish = useMatch("/marketplace/publish");
-  const matchSynergy = useMatch("/marketplace/synergy");
-  const matchRoundtable = useMatch("/marketplace/roundtable");
-  const matchSynthesis = useMatch("/marketplace/synthesis");
-  const matchForgeLab = useMatch("/marketplace/forge-lab");
-  const matchBonsai = useMatch("/marketplace/bonsai");
-  const matchCorporate = useMatch("/marketplace/corporate");
 
-  // Stage-1 / MVP: CLASS C marketplace sub-pages route through the always-on
-  // `/marketplace/:id` matcher, so we MUST re-check the flag inside the
-  // component too — not just at the App.tsx route table.
   if (matchPublish) return <PublishPage />;
-  if (matchSynergy && FEATURES.sphinxAdvanced) return <SynergyLabPage />;
-  if (matchRoundtable && FEATURES.sphinxAdvanced) return <RoundtablePage />;
-  if (matchSynthesis && FEATURES.sphinxAdvanced) return <SynthesisPage />;
-  if (matchForgeLab && FEATURES.forgeLabDocx) return <ForgeLabPage />;
-  if (matchBonsai) return <CommandCentrePage />;
-  if (matchCorporate && FEATURES.corporateMarketplace)
-    return <CorporateMarketplacePage />;
   if (matchDetail && paramsDetail) {
     if (paramsDetail.id === "publish") return <PublishPage />;
-    if (paramsDetail.id === "synergy" && FEATURES.sphinxAdvanced)
-      return <SynergyLabPage />;
-    if (paramsDetail.id === "roundtable" && FEATURES.sphinxAdvanced)
-      return <RoundtablePage />;
-    if (paramsDetail.id === "synthesis" && FEATURES.sphinxAdvanced)
-      return <SynthesisPage />;
-    if (paramsDetail.id === "forge-lab" && FEATURES.forgeLabDocx)
-      return <ForgeLabPage />;
-    if (paramsDetail.id === "bonsai") return <CommandCentrePage />;
-    if (paramsDetail.id === "corporate" && FEATURES.corporateMarketplace)
-      return <CorporateMarketplacePage />;
-    // Reserved CLASS C slugs with flag off → render 404 instead of trying
-    // to fetch a listing with id "synergy"/"roundtable"/etc.
-    const RESERVED = new Set([
-      "synergy",
-      "roundtable",
-      "synthesis",
-      "forge-lab",
-      "corporate",
-    ]);
-    if (RESERVED.has(paramsDetail.id)) return <NotFound />;
     return <ListingDetail id={paramsDetail.id} />;
   }
   return <ListingsList />;

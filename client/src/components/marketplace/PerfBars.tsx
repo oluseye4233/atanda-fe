@@ -42,9 +42,9 @@ function PerfBar({
 export function PerfBars({
   listing,
 }: {
-  listing: SpcListing & { bodyLength?: number };
+  listing: SpcListing;
 }) {
-  const bodyLength = listing.bodyLength ?? (listing as any).body?.length ?? 0;
+  const bodyLength = listing.body?.length ?? 0;
   const bars = derivePerfBars({
     hiveScore: listing.hiveScore,
     kcseScore: listing.kcseScore,

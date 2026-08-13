@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { TrendingUp, Coins } from "lucide-react";
+import { Coins } from "lucide-react";
 import { formatPriceUsd, hiveToTierBadge } from "@/lib/sphinx";
 import { TierBadge, CategoryChip, PillarBadge, GradeChip } from "./badges";
 import type { SpcListing } from "@/types/sphinx";
@@ -21,7 +21,7 @@ export function MatrixListingCard({ listing }: { listing: SpcListing }) {
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           <TierBadge hive={listing.hiveScore} />
-          <CategoryChip pillar={listing.pillar} />
+          <CategoryChip pillar={listing.pillar ?? ""} />
         </div>
         <GradeChip hive={listing.hiveScore} />
       </div>
@@ -41,13 +41,7 @@ export function MatrixListingCard({ listing }: { listing: SpcListing }) {
 
       <div className="flex items-center justify-between pt-3 mt-auto border-t border-white/5">
         <div className="flex items-center gap-3 text-[10px] font-mono text-muted-foreground">
-          <PillarBadge pillar={listing.pillar} />
-          <span className="flex items-center gap-1">
-            <TrendingUp className="h-3 w-3" />
-            <span data-testid={`text-sales-${listing.id}`}>
-              {listing.salesCount}
-            </span>
-          </span>
+          <PillarBadge pillar={listing.pillar ?? ""} />
         </div>
         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-amber-400/10 border border-amber-400/30">
           <Coins className="h-3.5 w-3.5 text-amber-400" />
@@ -55,7 +49,7 @@ export function MatrixListingCard({ listing }: { listing: SpcListing }) {
             className="font-mono text-xs font-bold text-amber-400"
             data-testid={`text-price-${listing.id}`}
           >
-            {formatPriceUsd(listing.priceCredits)}
+            {formatPriceUsd(listing.price)}
           </span>
         </div>
       </div>
