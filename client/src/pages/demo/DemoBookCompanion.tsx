@@ -1,4 +1,5 @@
 import { BookOpen, Compass, Award, TrendingUp, QrCode } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { DemoHelperCallout } from "@/components/demo/DemoHelperCallout";
 
 const BOOK_LEDGER = {

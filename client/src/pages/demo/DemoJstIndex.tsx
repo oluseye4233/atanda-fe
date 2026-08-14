@@ -137,10 +137,7 @@ export default function DemoJstIndex() {
 
       {/* Flywheel Card */}
       <div>
-        <FlywheelCard
-          top={{ name: "CCGE Practice Session", description: "Earned +5 ARK Boost this morning" }}
-          ranked={[]}
-        />
+        <FlywheelCard top={null} ranked={[]} />
         <SectionExplanation text="The Flywheel records your active credits and daily contributions. Practicing CCGE and publishing prompts directly increments your score up to a capped amount." />
       </div>
     </div>

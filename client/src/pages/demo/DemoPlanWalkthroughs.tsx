@@ -5,20 +5,13 @@ import { FileText, FileImage, FileType2 } from "lucide-react";
 import type { ArkResume } from "@/services/ark-resume.service";
 
 const MOCK_RESUME: ArkResume = {
-  id: "res-1",
-  userId: "user-1",
-  createdAt: "2026-01-15T08:00:00Z",
-  updatedAt: "2026-08-15T00:00:00Z",
   user: {
     name: "Sarah Chen",
-    email: "sarah.chen@atlaslogistics.io",
     arkScore: 487,
     arkIdString: "ARK-CHEN-8291-ATLAS",
-    headshotDataUrl: undefined,
+    headshotDataUrl: null,
   },
   identity: {
-    id: "id-1",
-    userId: "user-1",
     currentRole: "Senior Product Manager",
     currentEmployer: "Atlas Logistics",
     contactEmail: "sarah.chen@atlaslogistics.io",
@@ -49,7 +42,7 @@ const MOCK_RESUME: ArkResume = {
       emoji: "🚀",
       name: "Super Prompt Orchestration",
       category: "Product Management",
-      mappings: [{ standard: "SFIA", code: "PROD-L5" }],
+      mappings: { sfia: ["PROD-L5"] },
       tier: "Platinum",
     },
     {
@@ -57,7 +50,7 @@ const MOCK_RESUME: ArkResume = {
       emoji: "📊",
       name: "AI-Assisted OKR Synthesis",
       category: "Product Operations",
-      mappings: [{ standard: "WEF", code: "COG-SYS-1" }],
+      mappings: { wef: ["COG-SYS-1"] },
       tier: "Gold",
     },
   ],
@@ -73,9 +66,18 @@ const MOCK_RESUME: ArkResume = {
         "Synthesized monthly stakeholder metrics reducing report preparation cycles from 3 days to 4 hours.",
       ],
       mappedCards: [
-        { cardId: "card-pm-2", emoji: "📊", name: "AI-Assisted OKR Synthesis", mappings: [{ standard: "WEF", code: "COG-SYS-1" }], tier: "Gold" },
+        {
+          cardId: "card-pm-2",
+          emoji: "📊",
+          name: "AI-Assisted OKR Synthesis",
+          category: "Product Operations",
+          mappings: { wef: ["COG-SYS-1"] },
+          tier: "Gold",
+        },
       ],
       confirmation: {
+        type: "EMPLOYMENT",
+        targetRef: "card-pm-2",
         status: "CONFIRMED",
         confirmerOrg: "Atlas Logistics",
       },
@@ -85,7 +87,6 @@ const MOCK_RESUME: ArkResume = {
   certifications: ["Context Craft Certified PM (CC-400)", "Agile Alliance Scrum Product Owner"],
   confirmations: [
     {
-      id: "c-1",
       type: "SKILL",
       targetRef: "card-pm-2",
       status: "CONFIRMED",

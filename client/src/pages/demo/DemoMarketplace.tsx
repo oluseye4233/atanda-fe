@@ -1,9 +1,61 @@
 import React, { useState } from "react";
-import { Coins, Search, Sparkles, Building2, Star, Store, Plus, Lock, X } from "lucide-react";
-import { formatPriceUsd, hiveToTierBadge } from "@/lib/sphinx";
-import { TierBadge, GradeChip, CategoryChip, PillarBadge } from "@/components/marketplace/badges";
+import { Coins, Search, Building2, Star, Store, Lock, X, Crown, Award } from "lucide-react";
+import { formatPriceUsd } from "@/lib/sphinx";
 import { DemoHelperCallout } from "@/components/demo/DemoHelperCallout";
 import { Button } from "@/components/ui/button";
+
+// Safe local tier helpers — avoids the TIER_VISUALS key mismatch in the shared badges component
+function tierFromHive(hive: number): { label: string; color: string; border: string; bg: string } {
+  if (hive >= 90) return { label: "Platinum", color: "#AA44FF", border: "border-purple-400/40", bg: "bg-purple-500/10" };
+  if (hive >= 80) return { label: "Gold",     color: "#FFC857", border: "border-amber-400/40",  bg: "bg-amber-400/10"  };
+  if (hive >= 70) return { label: "Silver",   color: "#9BB7C7", border: "border-slate-300/30",   bg: "bg-slate-300/10"  };
+  if (hive >= 60) return { label: "Bronze",   color: "#CD7F32", border: "border-orange-400/30",  bg: "bg-orange-400/10" };
+  return           { label: "Ungraded",        color: "#888",    border: "border-white/10",       bg: "bg-white/5"       };
+}
+
+function gradeFromHive(hive: number): { grade: string; color: string } {
+  if (hive >= 95) return { grade: "A+", color: "#AA44FF" };
+  if (hive >= 90) return { grade: "A",  color: "#AA44FF" };
+  if (hive >= 85) return { grade: "A-", color: "#44AA44" };
+  if (hive >= 80) return { grade: "B+", color: "#44AA44" };
+  if (hive >= 75) return { grade: "B",  color: "#4488FF" };
+  if (hive >= 70) return { grade: "B-", color: "#4488FF" };
+  if (hive >= 65) return { grade: "C+", color: "#FFDD00" };
+  if (hive >= 60) return { grade: "C",  color: "#FFDD00" };
+  return           { grade: "F",        color: "#FF4444" };
+}
+
+function DemoTierBadge({ hive }: { hive: number }) {
+  const t = tierFromHive(hive);
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded font-mono uppercase tracking-wider border px-2 py-0.5 text-[10px] ${t.bg} ${t.border}`}
+      style={{ color: t.color }}
+    >
+      <Crown className="h-3 w-3" /> {t.label}
+    </span>
+  );
+}
+
+function DemoGradeChip({ hive }: { hive: number }) {
+  const { grade, color } = gradeFromHive(hive);
+  return (
+    <div
+      className="h-10 w-10 flex items-center justify-center rounded-md font-display font-bold border text-xl"
+      style={{ color, borderColor: `${color}55`, backgroundColor: `${color}15` }}
+    >
+      {grade}
+    </div>
+  );
+}
+
+function DemoPillarBadge({ pillar }: { pillar: string }) {
+  return (
+    <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-white/5 text-muted-foreground border border-white/10">
+      {pillar}
+    </span>
+  );
+}
 
 const MOCK_LISTINGS = [
   {
@@ -132,26 +184,20 @@ export default function DemoMarketplace() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {MOCK_LISTINGS.map((l) => {
-            const tier = hiveToTierBadge(l.hiveScore);
+            const tier = tierFromHive(l.hiveScore);
             const isOwned = purchasedIds.includes(l.id);
             return (
               <div
                 key={l.id}
                 onClick={() => setSelectedListing(l)}
-                className={`group glass-card rounded-xl border transition-all hover:scale-[1.02] flex flex-col p-5 gap-3 cursor-pointer ${
-                  tier === "ULTRA"
-                    ? "border-purple-400/30 hover:border-purple-400/60"
-                    : tier === "PREMIUM"
-                    ? "border-amber-400/30 hover:border-amber-400/60"
-                    : "border-white/10 hover:border-primary/45"
-                }`}
+                className={`group glass-card rounded-xl border transition-all hover:scale-[1.02] flex flex-col p-5 gap-3 cursor-pointer ${tier.border} hover:border-primary/45`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <TierBadge hive={l.hiveScore} />
-                    <CategoryChip pillar={l.pillar} />
+                    <DemoTierBadge hive={l.hiveScore} />
+                    <DemoPillarBadge pillar={l.pillar} />
                   </div>
-                  <GradeChip hive={l.hiveScore} />
+                  <DemoGradeChip hive={l.hiveScore} />
                 </div>
 
                 <h3 className="font-display font-bold text-base text-white leading-tight line-clamp-2 group-hover:text-primary transition-colors">
@@ -163,7 +209,7 @@ export default function DemoMarketplace() {
 
                 <div className="flex items-center justify-between pt-3 mt-auto border-t border-white/5">
                   <div className="flex items-center gap-3 text-[10px] font-mono text-muted-foreground">
-                    <PillarBadge pillar={l.pillar} />
+                    <DemoPillarBadge pillar={l.pillar} />
                     <span>by {l.creator}</span>
                   </div>
                   <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-400/10 border border-amber-400/30">
@@ -226,13 +272,13 @@ export default function DemoMarketplace() {
             <div className="flex items-start gap-4 justify-between pr-8">
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <TierBadge hive={selectedListing.hiveScore} />
-                  <CategoryChip pillar={selectedListing.pillar} />
+                  <DemoTierBadge hive={selectedListing.hiveScore} />
+                  <DemoPillarBadge pillar={selectedListing.pillar} />
                 </div>
                 <h2 className="text-xl font-display font-bold text-white leading-tight">{selectedListing.title}</h2>
                 <p className="text-xs font-mono text-muted-foreground mt-1">by {selectedListing.creator}</p>
               </div>
-              <GradeChip hive={selectedListing.hiveScore} />
+              <DemoGradeChip hive={selectedListing.hiveScore} />
             </div>
 
             <p className="text-sm text-muted-foreground leading-relaxed">{selectedListing.description}</p>
