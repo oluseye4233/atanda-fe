@@ -1,15 +1,11 @@
-import { useEffect, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { f1000Service } from "@/services/f1000.service";
-import { useAuth } from "@/lib/useAuth";
-import { getApiErrorMessage } from "@/lib/apiError";
 import { F1000QrCard } from "@/components/f1000/F1000QrCard";
-import { F1000ClaimPanel } from "@/components/f1000/F1000ClaimPanel";
-import type { F1000Membership, F1000Stats } from "@/types/f1000";
+import { F1000RandomCodePanel } from "@/components/f1000/F1000RandomCodePanel";
+import type { F1000Stats } from "@/types/f1000";
 
 export default function F1000Page() {
-  const { user, isLoading } = useAuth();
   const queryClient = useQueryClient();
 
   const claimUrl = typeof window !== "undefined" ? `${window.location.origin}/f1000` : "/f1000";
@@ -20,46 +16,11 @@ export default function F1000Page() {
     refetchOnWindowFocus: false,
   });
 
-  const meQuery = useQuery<F1000Membership>({
-    queryKey: ["/api/f1000/me"],
-    queryFn: () => f1000Service.getMe().then((r) => r.data),
-    enabled: !!user,
-    refetchOnWindowFocus: false,
-  });
-
-  const claim = useMutation({
-    mutationFn: () => f1000Service.claim(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/f1000/me"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/f1000/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-    },
-  });
-
-  const stats = meQuery.data?.stats ?? statsQuery.data;
+  const stats = statsQuery.data;
   const remaining = stats?.remaining ?? F1000_LIMIT_FALLBACK;
   const limit = stats?.limit ?? F1000_LIMIT_FALLBACK;
   const claimedSeats = stats?.claimed ?? 0;
   const soldOut = remaining <= 0;
-  const invite = meQuery.data?.invite ?? null;
-
-  // Requirement: a seat is reserved the moment a signed-in user lands on the
-  // QR target. Auto-claim once per mount when authenticated, no invite yet, and
-  // seats remain. The server allocation is idempotent, so this is safe to fire.
-  const autoClaimed = useRef(false);
-  useEffect(() => {
-    if (
-      !autoClaimed.current &&
-      user &&
-      meQuery.isSuccess &&
-      !invite &&
-      !soldOut &&
-      !claim.isPending
-    ) {
-      autoClaimed.current = true;
-      claim.mutate();
-    }
-  }, [user, meQuery.isSuccess, invite, soldOut, claim]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-10 py-4">
@@ -97,16 +58,8 @@ export default function F1000Page() {
           </div>
         </div>
 
-        <F1000ClaimPanel
-          user={user}
-          isLoading={isLoading}
-          invite={invite}
-          limit={limit}
-          soldOut={soldOut}
-          claiming={claim.isPending}
-          claimError={claim.isError ? getApiErrorMessage(claim.error) : null}
-          onClaim={() => claim.mutate()}
-        />
+        {/* QR-scan landing — fetch a single-use code, copy it, claim it */}
+        <F1000RandomCodePanel onClaimed={() => queryClient.invalidateQueries({ queryKey: ["/api/f1000/me"] })} />
       </div>
     </div>
   );

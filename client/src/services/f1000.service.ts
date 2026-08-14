@@ -4,6 +4,7 @@ import type {
   F1000Stats,
   F1000ClaimBody,
   F1000ClaimResponse,
+  F1000RandomCode,
 } from "@/types/f1000";
 
 export const f1000Service = {
@@ -14,6 +15,14 @@ export const f1000Service = {
   /** GET /v1/f1000/me — authenticated founding-member status */
   getMe: () =>
     apiClient.get<F1000Membership>("/f1000/me"),
+
+  /**
+   * GET /v1/f1000/random-code
+   * Returns a single-use code for the QR scan flow, or
+   * `{ message: "No available codes" }` when the pool is exhausted.
+   */
+  getRandomCode: () =>
+    apiClient.get<F1000RandomCode>("/f1000/random-code"),
 
   /**
    * POST /v1/f1000/claim

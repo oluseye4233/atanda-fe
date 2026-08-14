@@ -34,3 +34,9 @@ export interface F1000ClaimResponse {
   alreadyClaimed: boolean;
   member: true;
 }
+
+/** GET /v1/f1000/random-code — a single-use code for the QR scan flow */
+export interface F1000RandomCode {
+  code?: string;
+  message?: string;
+}
