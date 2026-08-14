@@ -28,6 +28,9 @@ import NotFound from "@/pages/not-found";
 // ── Authenticated app — ONE lazy chunk, loaded on first protected navigation ──
 const AuthenticatedApp = lazy(() => import("@/app/AuthenticatedApp"));
 
+// ── Demo Tour app — separate lazy chunk, loaded when visiting /demo-tour ──
+const DemoApp = lazy(() => import("@/app/DemoApp"));
+
 // ── Command Center admin app — saparate lazy chunk, loaded only on the
 //    command-center subdomain (DNS routing is configured elsewhere).
 const AdminApp = lazy(() => import("@/app/AdminApp"));
@@ -72,6 +75,14 @@ function App() {
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/payments/success" element={<PaymentSuccessPage />} />
                   <Route path="/payments/failed" element={<PaymentFailedPage />} />
+                  <Route
+                    path="/demo-tour/*"
+                    element={
+                      <Suspense fallback={<TopLoadingBar />}>
+                        <DemoApp />
+                      </Suspense>
+                    }
+                  />
 
                 {/* ── Everything else → the authenticated bundle ───────── */}
                 {/* On the command-center subdomain, serve the admin module

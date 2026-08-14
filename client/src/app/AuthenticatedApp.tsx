@@ -11,7 +11,6 @@ import { AppLayout } from "@/components/layout/AppLayout";
 
 */
 
-
 import UploadPage from "@/pages/upload";
 import AssessmentPage from "@/pages/assessment";
 import Dashboard from "@/pages/dashboard";
@@ -24,6 +23,10 @@ import PlayPage from "@/pages/play";
 import ProfilePage from "@/pages/profile";
 import SubscriptionPage from "@/pages/subscription";
 import CheckoutPage from "@/pages/checkout";
+
+import F1000Page from "@/pages/f1000";
+import BookCompanionPage from "@/pages/book-companion";
+import MarketplacePage from "@/pages/marketplace";
 
 import NotFound from "@/pages/not-found";
 
@@ -49,6 +52,15 @@ export default function AuthenticatedApp() {
 
         {/* Module 2 — Upskilling Games */}
         <Route path="play" element={<PlayPage />} />
+
+        {/* Module 3 — SPHINX Marketplace */}
+        <Route path="marketplace/*" element={<MarketplacePage />} />
+
+        {/* Module 4 — Book Companion */}
+        <Route path="book" element={<BookCompanionPage />} />
+
+        {/* F1000 founding-member promo */}
+        <Route path="f1000" element={<F1000Page />} />
 
         {/* Account chrome */}
         <Route path="profile" element={<ProfilePage />} />

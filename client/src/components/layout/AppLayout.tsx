@@ -14,6 +14,9 @@ import {
   Shield,
   FileText,
   LogOut,
+  BookOpen,
+  ShoppingBag,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OnboardingTour } from "@/components/OnboardingTour";
@@ -71,8 +74,7 @@ const ALL_NAV_GROUPS: FlaggedNavGroup[] = [
       { name: "Intelligence Hub", href: "/dashboard", icon: BarChart3, hint: "Your scores & insights", flag: null },
       { name: "Upload CV", href: "/upload", icon: Upload, hint: "Run a new assessment", flag: null },
       { name: "ARK Resume", href: "/ark-resume", icon: FileText, hint: "ATS-optimized verified resume", flag: null },
-      // ── Out of MVP scope ──
-      // { name: "Book Companion", href: "/book", icon: BookOpen, hint: "Context Craft reading journey", flag: "bookCompanion" },
+      { name: "Book Companion", href: "/book", icon: BookOpen, hint: "Context Craft reading journey", flag: "bookCompanion" },
     ],
   },
   {
@@ -80,13 +82,8 @@ const ALL_NAV_GROUPS: FlaggedNavGroup[] = [
     items: [
       { name: "Skill Games", href: "/play", icon: Gamepad2, hint: "CCGE Arena — earn points", flag: null },
       { name: "Career Mobility", href: "/pathways", icon: Map, hint: "Pivot opportunities", flag: null },
-      // ── Out of MVP scope (SPHINX marketplace + training) ──
-      // { name: "Marketplace", href: "/marketplace", icon: ShoppingBag, hint: "SPHINX listings", flag: null },
-      // { name: "Corporate Marketplace", href: "/marketplace/corporate", icon: Building2, hint: "Your institution's SPCs", flag: "corporateMarketplace" },
-      // { name: "Roundtable", href: "/marketplace/roundtable", icon: Activity, hint: "Top-12 SPC leaderboard", flag: "sphinxAdvanced" },
-      // { name: "Synergy Lab", href: "/marketplace/synergy", icon: HelpCircle, hint: "Test card combinations", flag: "sphinxAdvanced" },
-      // { name: "Forge Lab", href: "/marketplace/forge-lab", icon: Upload, hint: "Upload .docx → HIVE pre-check", flag: "forgeLabDocx" },
-      // { name: "Training Providers", href: "/training", icon: GraduationCap, hint: "JST-matched certifications", flag: "trainingProviders" },
+      { name: "Marketplace", href: "/marketplace", icon: ShoppingBag, hint: "SPHINX listings", flag: null },
+      { name: "F1000", href: "/f1000", icon: Sparkles, hint: "Founding-member promo", flag: "f1000Promo" },
     ],
   },
   // ── Out of MVP scope (Talent Exchange) ──
@@ -147,7 +144,7 @@ function SidebarBody({ location, openTour, onNavigate, onLogout }: {
         </div>
       </Link>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Primary">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 nav-scrollbar" aria-label="Primary">
         {NAV_GROUPS.map((group) => (
           <div key={group.label} className="mb-5">
             <p className="px-2 mb-2 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/70">
@@ -370,12 +367,12 @@ export function AppLayout({ children }: AppLayoutProps) {
       </header>
 
       {/* Desktop sidebar (>= md) */}
-      <aside className="hidden sm:flex sm:w-56 glass border-r border-primary/20 shrink-0 z-10 sticky top-0 h-screen">
+      <aside className="hidden sm:flex sm:w-72 glass border-r border-primary/20 shrink-0 z-10 sticky top-0 h-screen">
         <SidebarBody location={pathname} openTour={open} onLogout={handleLogout} />
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col relative overflow-y-auto overflow-x-hidden min-h-0">
+      <main className="flex-1 flex flex-col relative overflow-y-auto overflow-x-hidden min-h-0 h-full">
         <AiBudgetBanner />
         {user?.isVerified === false && <EmailVerificationBanner email={user.email} />}
         {/* Desktop floating bell (>= sm) — sits in the top-right of the main column. */}

@@ -1,9 +1,13 @@
+// ── SPHINX marketplace — shared types ─────────────────────────────────────────
+
 export type ListingStatus = string;
 export type ListingScope = "OPEN" | "CORPORATE" | "BOTH";
+/** Alias kept for parity with the API's SpcScope naming. */
+export type SpcScope = ListingScope;
 
 // ── Listing ───────────────────────────────────────────────────────────────────
 
-export interface SphinxListing {
+export interface SpcListing {
   id: string;
   creatorUserId: string;
   title: string;
@@ -36,7 +40,7 @@ export interface CreateListingBody {
 export interface HivePrecheckBody {
   title: string;
   body: string;
-  pillar?: string | null;
+  pillar?: string;
 }
 
 export interface PillarSuggestion {

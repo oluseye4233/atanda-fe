@@ -124,6 +124,25 @@
     font-family: var(--font-display);
   }*/
 
+  /* Custom slim scrollbar for the sidebar nav */
+  .nav-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.35) transparent;
+  }
+  .nav-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .nav-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .nav-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--primary) / 0.35);
+    border-radius: 9999px;
+  }
+  .nav-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--primary) / 0.55);
+  }
+
   /* 3D flip-card utilities (used by CCGE Arena cards) */
   .perspective-1200 {
     perspective: 1200px;
