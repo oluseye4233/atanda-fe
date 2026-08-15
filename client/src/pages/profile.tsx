@@ -1,81 +1,52 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
-import { profileService } from "@/services/profile.service";
-import { resumeService } from "@/services/resume.service";
 import { guinService } from "@/services/guin.service";
 import type { GuinProfile } from "@/types/guin";
-import type { ProfileCredits, SpcSalesSummary } from "@/types/profile";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ProfileTab } from "@/components/profile/ProfileTab";
 import { SubscriptionTab } from "@/components/profile/SubscriptionTab";
-import { SecurityTab } from "@/components/profile/SecurityTab";
-import { AITab } from "@/components/profile/AITab";
-import { MarketplaceTab } from "@/components/profile/MarketplaceTab";
-import { PortfolioTab } from "@/components/profile/PortfolioTab";
 import { PrivacyTab } from "@/components/profile/PrivacyTab";
 import { ArkReportDownloadButton } from "@/components/ArkReportDownloadButton";
 import { Link } from "react-router-dom";
 import { FEATURES } from "@shared/featureFlags";
-import { User, CreditCard, ShieldCheck, Cpu, ShoppingBag, FileText, AlertTriangle } from "lucide-react";
+import { User, CreditCard, AlertTriangle } from "lucide-react";
 
-type TabKey = "profile" | "subscription" | "security" | "ai" | "marketplace" | "portfolio" | "privacy";
+type TabKey = "profile" | "subscription" | "privacy";
 
 const TAB_CONFIG: { key: TabKey; label: string; icon: React.ComponentType<{ className?: string }>; feature?: keyof typeof FEATURES }[] = [
   { key: "profile", label: "Profile", icon: User },
   { key: "subscription", label: "Subscription", icon: CreditCard },
-  { key: "security", label: "Security", icon: ShieldCheck },
-  { key: "ai", label: "AI Engine", icon: Cpu },
-  { key: "marketplace", label: "Marketplace", icon: ShoppingBag },
-  { key: "portfolio", label: "Portfolio", icon: FileText },
   { key: "privacy", label: "Privacy", icon: AlertTriangle },
 ];
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
-    const handleTabChange = (value: string) => {
-      setActiveTab(value as TabKey);
-    };
-
-    const [credits, setCredits] = useState<ProfileCredits | null>(null);
-  const [sales, setSales] = useState<SpcSalesSummary | null>(null);
   const [guin, setGuin] = useState<GuinProfile | null>(null);
-  const [matchedCardIds, setMatchedCardIds] = useState<string[] | null>(null);
-
-  const loadGuin = async () => {
-    if (!user) return;
-    try {
-      const { data } = await guinService.getByUserId(user.id);
-      setGuin(data);
-    } catch {
-      setGuin(null);
-    }
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as TabKey);
   };
 
-  const loadProfileData = async () => {
-    if (!user) return;
-
-    try {
-      const [creditsRes, salesRes, resumeRes] = await Promise.all([
-        profileService.getCredits(user.id),
-        profileService.getSpcSales(user.id),
-        resumeService.getLatest(user.id),
-      ]);
-      setCredits(creditsRes.data);
-      setSales(salesRes.data);
-      setMatchedCardIds(resumeRes.data.matchedCardIds ?? []);
-    } catch {
-      setCredits(null);
-      setSales(null);
-      setMatchedCardIds([]);
-    }
-
-    await loadGuin();
-  };
-
+  // `user.username` is an app-layer field not returned by /auth/*, so it's
+  // never populated in the auth cache. Fetch the GUIN+ profile instead, which
+  // carries the real username used for the public /u/:username link.
   useEffect(() => {
-    loadProfileData();
+    if (!user) return;
+    let active = true;
+    (async () => {
+      try {
+        const { data } = await guinService.getByUserId(user.id);
+        if (active) setGuin(data);
+      } catch {
+        if (active) setGuin(null);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, [user?.id]);
+
+  const publicUsername = guin?.user.username ?? user?.username;
 
   if (!user) {
     return (
@@ -98,18 +69,20 @@ export default function ProfilePage() {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <ArkReportDownloadButton />
-          {FEATURES.guinPublic && (
-            <Link to={`/u/${user.username}`} data-testid="link-view-public-profile">
-              <a className="px-3 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-wider border border-purple-300/30 bg-purple-300/10 text-purple-200 hover:bg-purple-300/20 transition-colors">
-                View Public Profile →
-              </a>
+          {FEATURES.guinPublic && publicUsername && (
+            <Link
+              to={`/u/${publicUsername}`}
+              data-testid="link-view-public-profile"
+              className="px-3 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-wider border border-purple-300/30 bg-purple-300/10 text-purple-200 hover:bg-purple-300/20 transition-colors"
+            >
+              View Public Profile →
             </Link>
           )}
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 gap-1 bg-muted/50 p-1 rounded-lg">
+        <TabsList className="grid w-full grid-cols-3 gap-1 bg-muted/50 p-1 rounded-lg">
           {TAB_CONFIG.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -132,22 +105,6 @@ export default function ProfilePage() {
 
         <TabsContent value="subscription" className="mt-6">
           <SubscriptionTab user={user} />
-        </TabsContent>
-
-        <TabsContent value="security" className="mt-6">
-          <SecurityTab />
-        </TabsContent>
-
-        <TabsContent value="ai" className="mt-6">
-          <AITab userId={user.id} />
-        </TabsContent>
-
-        <TabsContent value="marketplace" className="mt-6">
-          <MarketplaceTab credits={credits} sales={sales} />
-        </TabsContent>
-
-        <TabsContent value="portfolio" className="mt-6">
-          <PortfolioTab matchedCardIds={matchedCardIds} guin={guin} onLoadGuin={loadGuin} />
         </TabsContent>
 
         <TabsContent value="privacy" className="mt-6">

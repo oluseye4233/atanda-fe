@@ -12,7 +12,6 @@ import {
 } from "recharts";
 import {
   ShieldCheck,
-  Crown,
   ScrollText,
   Sparkles,
   ShoppingBag,
@@ -257,12 +256,21 @@ function EndorsementsBlock({
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    if (open && viewer) {
-      ccgeService
-        .getUserSessions(viewer.id)
-        .then(({ data }) => setSessions(data.data.filter((session) => session.status === "finished" && session.kcseScore !== null)))
-        .catch(() => setSessions([]));
-    }
+    if (!open || !viewer) return;
+    let active = true;
+    (async () => {
+      try {
+        const { data } = await ccgeService.getUserSessions(viewer.id);
+        if (active) {
+          setSessions(data.data.filter((session) => session.status === "finished" && session.kcseScore !== null));
+        }
+      } catch {
+        if (active) setSessions([]);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, [open, viewer]);
 
   const submit = async () => {
@@ -435,13 +443,15 @@ export default function GuinPublicPage() {
   const [profile, setProfile] = useState<GuinProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = () => {
+  const load = async () => {
     if (!username) return;
     setError(null);
-    guinService
-      .getByUsername(username)
-      .then(({ data }) => setProfile(data))
-      .catch((error: unknown) => setError(getApiErrorMessage(error, "Profile not found.")));
+    try {
+      const { data } = await guinService.getByUsername(username);
+      setProfile(data);
+    } catch (error: unknown) {
+      setError(getApiErrorMessage(error, "Profile not found."));
+    }
   };
 
   useEffect(() => {
