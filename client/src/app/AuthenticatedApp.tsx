@@ -27,6 +27,7 @@ import CheckoutPage from "@/pages/checkout";
 import F1000Page from "@/pages/f1000";
 import BookCompanionPage from "@/pages/book-companion";
 import MarketplacePage from "@/pages/marketplace";
+import GuinPublicPage from "@/pages/guin-public";
 
 import NotFound from "@/pages/not-found";
 
@@ -61,6 +62,9 @@ export default function AuthenticatedApp() {
 
         {/* F1000 founding-member promo */}
         <Route path="f1000" element={<F1000Page />} />
+
+        {/* GUIN+ public profile */}
+        <Route path="u/:username" element={<GuinPublicPage />} />
 
         {/* Account chrome */}
         <Route path="profile" element={<ProfilePage />} />

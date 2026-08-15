@@ -130,7 +130,7 @@ export function DemoSidebar({ activeStepId }: DemoSidebarProps) {
           <span>Demo Tour Mode</span>
         </div>
         <p className="text-[10px] text-muted-foreground leading-relaxed">
-          You are currently previewing the platform interface. Interactive elements are mocked with static data.
+          This is demo data. Create your account for personalized experience.
         </p>
       </div>
 

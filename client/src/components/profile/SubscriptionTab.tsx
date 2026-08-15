@@ -64,14 +64,6 @@ export function SubscriptionTab({ user }: SubscriptionTabProps) {
         </div>
       </Link>
 
-      <div className="glass-card p-5 rounded-xl border border-transparent" data-testid="card-profile-cert-static">
-        <div className="flex items-center gap-3 mb-3">
-          <ShieldCheck className="h-5 w-5 text-primary" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Context Craft</span>
-        </div>
-        <p className="font-display font-bold text-lg text-white">{user.contextCraftCertLevel || "NONE"}</p>
-      </div>
-
       {user.institution && (
         <div className="glass-card p-5 rounded-xl border border-transparent">
           <div className="flex items-center gap-3 mb-3">

@@ -16,4 +16,3 @@ export { featureFlagsService } from "./feature-flags.service";
 export { matchmakingService }  from "./matchmaking.service";
 export { sphinxService }       from "./sphinx.service";
 export { f1000Service }        from "./f1000.service";
-export { bookService }         from "./book.service";

@@ -114,29 +114,15 @@ export function ExplainerSection() {
           </div>
         </motion.div>
 
-        {/* Dynamic CTA for Demo Tour */}
-        <motion.div
-          initial={{ opacity: 0, y: 25 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="mt-16 text-center"
-        >
-          <div className="inline-block p-6 rounded-2xl bg-white/3 border border-white/10 backdrop-blur-sm max-w-2xl mx-auto shadow-[0_0_50px_rgba(0,0,0,0.3)]">
-            <h4 className="font-sans font-semibold text-white text-lg mb-2">
-              Want to see the platform in action first?
-            </h4>
-            <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-              Explore the entire suite with pre-loaded mock data and helper guides explaining each component. No login or résumé upload required.
-            </p>
-            <Link
-              to="/demo-tour"
-              data-testid="link-landing-demo"
-              className="inline-flex items-center gap-2 bg-transparent hover:bg-primary/10 text-primary border border-primary/40 hover:border-primary font-mono text-xs uppercase tracking-wider px-6 py-3.5 rounded-lg transition-all duration-300 hover:-translate-y-0.5"
-            >
-              <Sparkles className="h-4 w-4" /> View Demo Pages <ArrowRight className="h-4 w-4 animate-pulse" />
-            </Link>
-          </div>
-        </motion.div>
+        <div className="text-center mt-16">
+          <Link
+            to="/demo-tour"
+            data-testid="link-landing-demo"
+            className="inline-flex items-center gap-2 bg-transparent hover:bg-primary/10 text-primary border border-primary/40 hover:border-primary font-mono text-xs uppercase tracking-wider px-6 py-3.5 rounded-lg transition-all duration-300 hover:-translate-y-0.5"
+          >
+            <Sparkles className="h-4 w-4" /> View Demo Pages <ArrowRight className="h-4 w-4 animate-pulse" />
+          </Link>
+        </div>
       </div>
     </section>
   );
