@@ -1,11 +1,6 @@
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import {
-  JOURNEY_STAGES,
-  JOURNEY_NODES,
-  BOOK_TITLE,
-  BOOK_TOTAL_NODES,
-  type JourneyNode,
-} from "@shared/bookCompanion";
+import type { BookJourneyNode, BookJourneyResponse } from "@/types/book";
 import {
   BookOpen,
   Gamepad2,
@@ -15,6 +10,7 @@ import {
   Trophy,
   ChevronRight,
   Award,
+  CheckCircle2,
 } from "lucide-react";
 
 const tierBadgeClass: Record<string, string> = {
@@ -24,7 +20,7 @@ const tierBadgeClass: Record<string, string> = {
   Platinum: "text-cyan-300 border-cyan-300/30 bg-cyan-300/10",
 };
 
-function actionMeta(node: JourneyNode) {
+function actionMeta(node: BookJourneyNode) {
   if (node.deepLink.startsWith("/play")) {
     return { label: "Start skill game", icon: Gamepad2 };
   }
@@ -40,7 +36,7 @@ function actionMeta(node: JourneyNode) {
   return { label: "Go", icon: ChevronRight };
 }
 
-function JourneyNodeCard({ node }: { node: JourneyNode }) {
+function JourneyNodeCard({ node }: { node: BookJourneyNode }) {
   const action = actionMeta(node);
   const ActionIcon = action.icon;
 
@@ -63,14 +59,22 @@ function JourneyNodeCard({ node }: { node: JourneyNode }) {
             </p>
           )}
         </div>
-        <span
-          className={`shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono uppercase tracking-wider border ${
-            tierBadgeClass[node.tierArt] ?? "text-muted-foreground border-white/10 bg-white/5"
-          }`}
-        >
-          <Trophy className="h-3 w-3" />
-          {node.tierArt}
-        </span>
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          {node.earned && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-emerald-300">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Earned
+            </span>
+          )}
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono uppercase tracking-wider border ${
+              tierBadgeClass[node.tierArt] ?? "text-muted-foreground border-white/10 bg-white/5"
+            }`}
+          >
+            <Trophy className="h-3 w-3" />
+            {node.tierArt}
+          </span>
+        </div>
       </div>
 
       <ul className="mt-4 space-y-2 flex-1">
@@ -100,11 +104,20 @@ function JourneyNodeCard({ node }: { node: JourneyNode }) {
   );
 }
 
-export function JourneyMap() {
-  const stages = JOURNEY_STAGES.map((stage) => ({
-    ...stage,
-    nodes: JOURNEY_NODES.filter((node) => node.stage === stage.id),
-  }));
+interface JourneyMapProps {
+  journey?: BookJourneyResponse | null;
+}
+
+export function JourneyMap({ journey }: JourneyMapProps) {
+  const stages = useMemo(() => {
+    if (!journey) return [];
+    return journey.stages.map((stage) => ({
+      ...stage,
+      nodes: journey.nodes.filter((node) => node.stage === stage.id),
+    }));
+  }, [journey]);
+
+  if (!journey || stages.length === 0) return null;
 
   return (
     <div className="space-y-12" data-testid="journey-map">
@@ -133,7 +146,18 @@ export function JourneyMap() {
   );
 }
 
-export function JourneyHeader() {
+interface JourneyHeaderProps {
+  title?: string;
+  totalNodes?: number;
+  earnedCount?: number;
+}
+
+export function JourneyHeader({ title, totalNodes, earnedCount }: JourneyHeaderProps) {
+  const subtitleParts: string[] = [];
+  if (title) subtitleParts.push(title);
+  if (totalNodes !== undefined) subtitleParts.push(`${totalNodes} journey nodes`);
+  if (earnedCount !== undefined) subtitleParts.push(`${earnedCount} earned`);
+
   return (
     <div className="flex flex-col gap-2 border-b border-white/10 pb-6">
       <div className="flex items-center gap-2">
@@ -143,7 +167,7 @@ export function JourneyHeader() {
         </h2>
       </div>
       <p className="text-muted-foreground font-mono text-sm mt-1">
-        {BOOK_TITLE} · {BOOK_TOTAL_NODES} journey nodes
+        {subtitleParts.join(" · ")}
       </p>
     </div>
   );

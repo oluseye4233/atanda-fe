@@ -14,6 +14,7 @@ export interface CcgeCard {
 
 export interface CcgeScenario {
   id: string;
+  slug?: string;
   tier: string;
   title: string;
   prompt: string;

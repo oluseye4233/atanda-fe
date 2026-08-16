@@ -92,3 +92,33 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+// ── /api/* client (Book Companion, file analysis, etc.) ─────────────────────────
+// Routes under `/api` live on the same origin as the app in production, so this
+// client keeps the base URL relative. In dev the Vite proxy forwards `/api/*` to
+// the backend so the session cookie is preserved.
+export const API_BOOK_BASE_URL = "/api";
+
+export const apiBookClient: AxiosInstance = axios.create({
+  baseURL: API_BOOK_BASE_URL,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+    appKey: appKey ?? "",
+  },
+  timeout: 30_000,
+});
+
+apiBookClient.interceptors.response.use(
+  (response: AxiosResponse) => response,
+  (error) => {
+    const original = error.config as InternalAxiosRequestConfig | undefined;
+    const status: number | undefined = error.response?.status;
+
+    if (status === 401 && !isPublicAuthRequest(original?.url)) {
+      notifySessionExpired();
+    }
+
+    return Promise.reject(error);
+  },
+);
