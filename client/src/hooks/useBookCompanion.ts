@@ -30,7 +30,7 @@ export function useBookCompanion() {
     queryKey: ["book", "journey"],
     queryFn: async () => {
       try {
-        return (await bookService.getJourney()).data;
+        return await bookService.getJourney();
       } catch {
         return null;
       }
@@ -45,7 +45,7 @@ export function useBookCompanion() {
     queryKey: ["book", "progress"],
     queryFn: async () => {
       try {
-        return (await bookService.getProgress()).data;
+        return await bookService.getProgress();
       } catch {
         return null;
       }
@@ -57,7 +57,11 @@ export function useBookCompanion() {
   });
 
   const finalize = useMutation<FinalizeResponse, Error>({
-    mutationFn: async () => (await bookService.finalizeJourney()).data,
+    mutationFn: async () => {
+      const result = await bookService.finalizeJourney();
+      if (!result) throw new Error("Invalid finalize response");
+      return result;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["book", "progress"] });
       qc.invalidateQueries({ queryKey: ["book", "journey"] });

@@ -110,7 +110,13 @@ interface JourneyMapProps {
 
 export function JourneyMap({ journey }: JourneyMapProps) {
   const stages = useMemo(() => {
-    if (!journey) return [];
+    if (
+      !journey ||
+      !Array.isArray(journey.nodes) ||
+      !Array.isArray(journey.stages)
+    ) {
+      return [];
+    }
     return journey.stages.map((stage) => ({
       ...stage,
       nodes: journey.nodes.filter((node) => node.stage === stage.id),
