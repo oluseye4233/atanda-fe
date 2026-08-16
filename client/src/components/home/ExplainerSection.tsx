@@ -1,6 +1,5 @@
 import { Upload, BarChart3, Compass, Sparkles, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
 
 const steps = [
   {
@@ -113,16 +112,6 @@ export function ExplainerSection() {
             ))}
           </div>
         </motion.div>
-
-        <div className="text-center mt-16">
-          <Link
-            to="/demo-tour"
-            data-testid="link-landing-demo"
-            className="inline-flex items-center gap-2 bg-transparent hover:bg-primary/10 text-primary border border-primary/40 hover:border-primary font-mono text-xs uppercase tracking-wider px-6 py-3.5 rounded-lg transition-all duration-300 hover:-translate-y-0.5"
-          >
-            <Sparkles className="h-4 w-4" /> View Demo Pages <ArrowRight className="h-4 w-4 animate-pulse" />
-          </Link>
-        </div>
       </div>
     </section>
   );

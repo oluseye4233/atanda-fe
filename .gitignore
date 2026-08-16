@@ -6,6 +6,7 @@ vite.config.ts.*
 *.tar.gz
 
 # Reference / spec documents dropped into chat — not runtime assets
+temp_auto_push.bat
 attached_assets/*.docx
 attached_assets/*.pdf
 attached_assets/*.PDF
@@ -13,4 +14,5 @@ attached_assets/*.PDF
 .env
 .env.local
 .env.*.local
-.env.production
+.env.production.gitignore
+branch_structure.json
