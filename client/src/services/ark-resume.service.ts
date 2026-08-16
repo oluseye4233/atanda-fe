@@ -94,22 +94,13 @@ export interface ConfirmationInviteResponse {
 }
 
 export const arkResumeService = {
+  /** GET /v1/ark-resume — read the assembled document. */
   getResume: () => apiClient.get<ArkResume>("/ark-resume"),
 
-  setHeadshot: (dataUrl: string) =>
-    apiClient.post<{ ok: boolean; headshotDataUrl: string | null }>("/ark-resume/headshot", { dataUrl }),
+  /** PATCH /v1/ark-resume — manual override of extracted fields. */
+  updateResume: (partial: Partial<ArkResume>) =>
+    apiClient.patch<ArkResume>("/ark-resume", partial),
 
-  deleteHeadshot: () => apiClient.delete<{ ok: boolean }>("/ark-resume/headshot"),
-
-  listConfirmationInvites: () =>
-    apiClient.get<ConfirmationInvite[]>("/ark-resume/confirmation-invites"),
-
-  createConfirmationInvite: (body: CreateConfirmationInviteRequest) =>
-    apiClient.post<ConfirmationInviteResponse>("/ark-resume/confirmation-invites", body),
-
-  revokeConfirmationInvite: (id: string) =>
-    apiClient.post<{ ok: boolean }>(`/ark-resume/confirmation-invites/${encodeURIComponent(id)}/revoke`),
-
-  resendConfirmationInvite: (id: string) =>
-    apiClient.post<ConfirmationInviteResponse>(`/ark-resume/confirmation-invites/${encodeURIComponent(id)}/resend`),
+  /** POST /v1/ark-resume/extract — re-run LLM extraction + ATS on stored résumé text. */
+  extractResume: () => apiClient.post<ArkResume>("/ark-resume/extract"),
 };
