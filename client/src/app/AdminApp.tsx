@@ -3,7 +3,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 
 /** Admin dashboard pages — statically imported so they compile into the
- *  single admin code-split chunk that is lazy-loaded on the command-center
+ *  single admin code-split chunk that is lazy-loaded on the atanda-admin
  *  subdomain (see App.tsx).
  */
 import AdminDashboard from "@/pages/admin/dashboard";

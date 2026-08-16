@@ -31,16 +31,16 @@ const AuthenticatedApp = lazy(() => import("@/app/AuthenticatedApp"));
 // ── Demo Tour app — separate lazy chunk, loaded when visiting /demo-tour ──
 const DemoApp = lazy(() => import("@/app/DemoApp"));
 
-// ── Command Center admin app — saparate lazy chunk, loaded only on the
-//    command-center subdomain (DNS routing is configured elsewhere).
+// ── Admin app — separate lazy chunk, loaded only on the
+//    atanda-admin subdomain (DNS routing is configured elsewhere).
 const AdminApp = lazy(() => import("@/app/AdminApp"));
 
-const isCommandCenterSubdomain =
+const isAdminSubdomain =
   typeof window !== "undefined" &&
-  window.location.hostname.split(".")[0] === "command-center";
+  window.location.hostname.split(".")[0] === "atanda-admin";
 
 // The admin module, wrapped in auth + suspense. Rendered for every route on
-// the command-center subdomain — including the root, which would otherwise
+// the atanda-admin subdomain — including the root, which would otherwise
 // match the public <Home /> route below.
 const adminElement = (
   <ProtectedRoute>
@@ -62,9 +62,9 @@ function App() {
               <ScrollToTop />
               <Routes>
                 {/* ── Public — no sidebar, no auth ─────────────────────── */}
-                  {/* On the command-center subdomain the root serves the admin
+                  {/* On the atanda-admin subdomain the root serves the admin
                       module instead of the public landing page. */}
-                  <Route path="/" element={isCommandCenterSubdomain ? adminElement : <Home />} />
+                  <Route path="/" element={isAdminSubdomain ? adminElement : <Home />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
                   <Route path="/verify-account" element={<VerifyAccountPage />} />
@@ -85,12 +85,12 @@ function App() {
                   />
 
                 {/* ── Everything else → the authenticated bundle ───────── */}
-                {/* On the command-center subdomain, serve the admin module
+                {/* On the atanda-admin subdomain, serve the admin module
                     instead of the regular authenticated app. */}
                 <Route
                   path="/*"
                   element={
-                    isCommandCenterSubdomain ? (
+                    isAdminSubdomain ? (
                       adminElement
                     ) : (
                       <ProtectedRoute>

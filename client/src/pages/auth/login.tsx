@@ -25,7 +25,7 @@ export default function LoginPage() {
   const redirectTo =
     (location.state as LocationState | null)?.from?.pathname ??
     (typeof window !== "undefined" &&
-    window.location.hostname.split(".")[0] === "command-center"
+    window.location.hostname.split(".")[0] === "atanda-admin"
       ? "/"
       : "/dashboard");
 
