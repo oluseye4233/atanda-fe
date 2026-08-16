@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { getNodeByScenarioId } from "@shared/bookCompanion";
 import { useCcge } from "@/hooks/useCcge";
 import { ccgeService } from "@/services/ccge.service";
 import { getApiErrorMessage } from "@/lib/apiError";
@@ -18,6 +20,7 @@ import {
   Loader2,
   Crown,
   Target,
+  BookOpen,
 } from "lucide-react";
 import { CcgeCard } from "@/components/play/CcgeCard";
 import { FlippableCard } from "@/components/ui/flippable-card";
@@ -80,6 +83,9 @@ export default function PlayPage() {
   const { cards: rawCards, scenarios: rawScenarios, isLoading } = useCcge();
   const cards = rawCards ?? [];
   const scenarios = rawScenarios ?? [];
+  const [searchParams] = useSearchParams();
+  const scenarioParam = searchParams.get("scenario");
+  const [autoStartedFor, setAutoStartedFor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<ActiveSession | null>(null);
   const [activeScenario, setActiveScenario] = useState<CcgeScenario | null>(null);
@@ -100,7 +106,7 @@ export default function PlayPage() {
     return order.filter((t) => seen.has(t));
   }, [scenarios]);
 
-  const startSession = async (scenarioId: string) => {
+  const startSession = useCallback(async (scenarioId: string) => {
     if (!user?.id) {
       setError("Please log in to start a session.");
       return;
@@ -120,7 +126,27 @@ export default function PlayPage() {
     } catch (err) {
       setError(getApiErrorMessage(err, "Couldn't start this session."));
     }
-  };
+  }, [user?.id, scenarios]);
+
+  // Auto-start a scenario when the page is opened via a Book Companion deep
+  // link such as /play?scenario=bc-f1-system. The book companion CTA takes
+  // the reader straight into the matching CCGE challenge.
+  useEffect(() => {
+    if (!scenarioParam || isLoading || !user?.id || session) return;
+    if (autoStartedFor === scenarioParam) return;
+
+    const scenario = scenarios.find(
+      (s) => s.id === scenarioParam || s.slug === scenarioParam,
+    );
+    setAutoStartedFor(scenarioParam);
+
+    if (!scenario) {
+      setError(`The scenario "${scenarioParam}" isn't available right now.`);
+      return;
+    }
+
+    void startSession(scenario.id);
+  }, [scenarioParam, isLoading, user?.id, session, scenarios, autoStartedFor, startSession]);
 
   const playCard = (id: string) => {
     if (played.includes(id)) return;
@@ -354,6 +380,15 @@ export default function PlayPage() {
             </div>
           </div>
         ) : null}
+
+        {scenarioParam && getNodeByScenarioId(scenarioParam) && (
+          <Link to="/book" className="block w-full">
+            <Button variant="secondary" className="w-full" data-testid="button-return-to-book">
+              <BookOpen className="h-4 w-4 mr-2" />
+              Return to Book Journey
+            </Button>
+          </Link>
+        )}
 
         <div className="flex gap-3">
           <Button onClick={resetToLobby} className="flex-1" data-testid="button-back-to-lobby">

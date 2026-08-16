@@ -62,6 +62,12 @@ export default defineConfig({
         secure: true,
         cookieDomainRewrite: "localhost",
       },
+      "/api": {
+        target: "https://api.atanda.ai",
+        changeOrigin: true,
+        secure: true,
+        cookieDomainRewrite: "localhost",
+      },
     },
   },
 });
