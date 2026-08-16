@@ -94,10 +94,11 @@ apiClient.interceptors.response.use(
 );
 
 // ── /api/* client (Book Companion, file analysis, etc.) ─────────────────────────
-// Routes under `/api` live on the same origin as the app in production, so this
-// client keeps the base URL relative. In dev the Vite proxy forwards `/api/*` to
-// the backend so the session cookie is preserved.
-export const API_BOOK_BASE_URL = "/api";
+// In dev the Vite proxy forwards `/api/*` to the backend so the session cookie is
+// preserved. In production we hit the real API origin directly, just like `/v1`.
+export const API_BOOK_BASE_URL = import.meta.env.DEV
+  ? "/api"
+  : (import.meta.env.VITE_API_BOOK_URL?.trim() || "https://api.atanda.ai/api");
 
 export const apiBookClient: AxiosInstance = axios.create({
   baseURL: API_BOOK_BASE_URL,
