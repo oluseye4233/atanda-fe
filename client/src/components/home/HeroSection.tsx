@@ -64,7 +64,7 @@ export function HeroSection() {
             className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-3 shrink-0"
           >
             <Link
-              to="/signup"
+              to="/demo-tour"
               data-testid="button-hero-upload"
               className="group inline-flex items-center justify-center gap-2 h-11 px-7 rounded-md bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 hover:-translate-y-0.5 transition-all duration-200"
               style={{
@@ -73,7 +73,7 @@ export function HeroSection() {
               }}
             >
               <Upload className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5" />
-              Analyze My CV
+              View Demo Pages
             </Link>
             <Link
               to="/login"
@@ -96,13 +96,20 @@ export function HeroSection() {
         {/* Subtext + proof */}
         <motion.div
           variants={fadeUp}
-          className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4"
         >
           <p className="text-sm md:text-base text-muted-foreground max-w-xl leading-relaxed">
             Upload your CV and, in under 60 seconds, see how marketable you are
             today, where AI puts you at risk, and the smartest next move you can
             make.
           </p>
+
+          <Link
+            to="/sign-up"
+            data-testid="button-hero-upload"
+            className="group inline-flex items-center justify-center gap-2 h-11 mt-4 rounded-md underline text-white font-semibold text-sm"
+          >
+            Analyze my CV
+          </Link>
         </motion.div>
       </motion.div>
 
