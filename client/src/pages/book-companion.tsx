@@ -29,7 +29,7 @@ export default function BookCompanionPage() {
     finalize,
   } = useBookCompanion();
 
-  const epilogue = journey?.nodes.find((node) => node.id === "epilogue");
+  const epilogue = journey?.nodes?.find((node) => node.id === "epilogue");
   const ledgerDelta = finalize.data?.ledger.delta ?? progress?.ledger.delta;
 
   const handleFinalize = async () => {
@@ -58,7 +58,7 @@ export default function BookCompanionPage() {
     );
   }
 
-  if (!journey || isError) {
+  if (!journey || isError || !Array.isArray(journey.nodes)) {
     return (
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
         <Empty className="min-h-[50vh] glass-card rounded-xl border-white/10">
@@ -68,7 +68,7 @@ export default function BookCompanionPage() {
             <EmptyDescription>
               {isError
                 ? "We couldn't reach the journey server. Make sure you're signed in and the book_companion feature is enabled."
-                : "No journey data is available right now."}
+                : "The journey data we received is incomplete. Check the /api/book/journey response shape."}
             </EmptyDescription>
           </EmptyHeader>
           <Button onClick={() => refetch()} variant="outline" size="sm">
