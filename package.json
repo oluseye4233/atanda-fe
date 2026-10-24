@@ -4,13 +4,18 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "node api.js && vite",
-    "build": "node api.js && vite build",
-    "preview": "vite preview",
-    "check": "tsc",
-    "deploy": "vite build && wrangler deploy",
-    "deploy:staging": "vite build && wrangler deploy --env staging",
-    "cf:dev": "wrangler dev"
+    "dev": "wrangler dev",
+    "build": "npm run check",
+    "preview": "wrangler dev",
+    "check": "node --check worker/arkx-gateway.js && npm run test:gateway",
+    "deploy": "npm run build && wrangler deploy",
+    "deploy:staging": "npm run build && wrangler deploy --env staging",
+    "cf:dev": "wrangler dev",
+    "test:gateway": "node --test worker/arkx-gateway.test.js",
+    "dev:legacy": "vite",
+    "build:legacy": "vite build",
+    "preview:legacy": "vite preview",
+    "check:legacy": "tsc"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
